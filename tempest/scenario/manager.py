@@ -932,6 +932,10 @@ class NetworkScenarioTest(OfficialClientTest):
         """
         router_id = self.config.network.public_router_id
         network_id = self.config.network.public_network_id
+        existing = next(r for r in self._list_routers()
+                        if r['tenant_id'] == tenant_id)
+        if existing:
+            router_id = existing['id']
         if router_id:
             result = self.network_client.show_router(router_id)
             return net_common.AttributeDict(**result['router'])
