@@ -168,7 +168,7 @@ class TestNetworkBasicOps(manager.NetworkScenarioTest):
 
     def _create_security_groups(self):
         self.security_groups[self.tenant_id] =\
-            self._create_security_group_neutron(tenant_id=self.tenant_id)
+            self._create_security_group_nova(tenant_id=self.tenant_id)
 
     def _check_networks(self):
         # Checks that we see the newly created network/subnet/router via
