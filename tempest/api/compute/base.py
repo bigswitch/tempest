@@ -262,6 +262,8 @@ class BaseV3ComputeTest(BaseComputeTest):
 
     @classmethod
     def setUpClass(cls):
+        # By default compute tests do not create network resources
+        cls.set_network_resources()
         super(BaseV3ComputeTest, cls).setUpClass()
         if not cls.config.compute_feature_enabled.api_v3:
             cls.tearDownClass()
@@ -276,6 +278,8 @@ class BaseV3ComputeTest(BaseComputeTest):
         cls.extensions_client = cls.os.extensions_v3_client
         cls.availability_zone_client = cls.os.availability_zone_v3_client
         cls.interfaces_client = cls.os.interfaces_v3_client
+        cls.instance_usages_audit_log_client = \
+            cls.os.instance_usages_audit_log_v3_client
         cls.hypervisor_client = cls.os.hypervisor_v3_client
         cls.keypairs_client = cls.os.keypairs_v3_client
         cls.tenant_usages_client = cls.os.tenant_usages_v3_client
@@ -285,6 +289,7 @@ class BaseV3ComputeTest(BaseComputeTest):
         cls.aggregates_client = cls.os.aggregates_v3_client
         cls.hosts_client = cls.os.hosts_v3_client
         cls.quotas_client = cls.os.quotas_v3_client
+        cls.version_client = cls.os.version_v3_client
 
     @classmethod
     def create_image_from_server(cls, server_id, **kwargs):
@@ -344,6 +349,8 @@ class BaseV3ComputeAdminTest(BaseV3ComputeTest):
 
         cls.os_adm = os_adm
         cls.servers_admin_client = cls.os_adm.servers_v3_client
+        cls.instance_usages_audit_log_admin_client = \
+            cls.os_adm.instance_usages_audit_log_v3_client
         cls.services_admin_client = cls.os_adm.services_v3_client
         cls.availability_zone_admin_client = \
             cls.os_adm.availability_zone_v3_client

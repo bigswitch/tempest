@@ -1,6 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
-# Copyright 2013 IBM Corporation
+# Copyright 2014 NEC Corporation
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,22 +15,23 @@
 
 from lxml import etree
 
-from tempest.common.rest_client import RestClientXML
-from tempest.services.compute.xml.common import xml_to_json
+from tempest.common import rest_client
+from tempest.services.compute.xml import common
 
 
-class InstanceUsagesAuditLogV3ClientXML(RestClientXML):
+class VersionV3ClientXML(rest_client.RestClientXML):
 
     def __init__(self, config, username, password, auth_url, tenant_name=None):
-        super(InstanceUsagesAuditLogV3ClientXML, self).__init__(
-            config, username, password, auth_url, tenant_name)
+        super(VersionV3ClientXML, self).__init__(config, username,
+                                                 password, auth_url,
+                                                 tenant_name)
         self.service = self.config.compute.catalog_v3_type
 
-    def list_instance_usage_audit_logs(self, time_before=None):
-        if time_before:
-            url = 'os-instance-usage-audit-log?before=%s' % time_before
-        else:
-            url = 'os-instance-usage-audit-log'
-        resp, body = self.get(url, self.headers)
-        instance_usage_audit_logs = xml_to_json(etree.fromstring(body))
-        return resp, instance_usage_audit_logs
+    def _parse_array(self, node):
+        json = common.xml_to_json(node)
+        return json
+
+    def get_version(self):
+        resp, body = self.get('', self.headers)
+        body = self._parse_array(etree.fromstring(body))
+        return resp, body
