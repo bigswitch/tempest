@@ -937,6 +937,7 @@ class NetworkScenarioTest(OfficialClientTest):
                         if r['tenant_id'] == tenant_id)
         if existing:
             router_id = existing['id']
+        router_id = False
         if router_id:
             result = self.network_client.show_router(router_id)
             return net_common.AttributeDict(**result['router'])
