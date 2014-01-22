@@ -112,7 +112,7 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         for network in cls.networks:
             # Prevent locking race condition caused by DHCP and network_delete
             # removing port at same time
-            time.sleep(2)
+            time.sleep(4)
             cls.client.delete_network(network['id'])
         super(BaseNetworkTest, cls).tearDownClass()
 
