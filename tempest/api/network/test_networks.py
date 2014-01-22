@@ -79,6 +79,8 @@ class NetworksTestJSON(base.BaseNetworkTest):
         cidr = netaddr.IPNetwork(self.network_cfg.tenant_network_cidr)
         mask_bits = self.network_cfg.tenant_network_mask_bits
         for subnet_cidr in cidr.subnet(mask_bits):
+            import time
+            time.sleep(3)
             try:
                 resp, body = self.client.create_subnet(net_id,
                                                        str(subnet_cidr))
