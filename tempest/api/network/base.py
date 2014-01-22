@@ -16,6 +16,7 @@
 #    under the License.
 
 import netaddr
+import time
 
 from tempest import clients
 from tempest.common.utils import data_utils
@@ -109,6 +110,9 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
             cls.client.delete_subnet(subnet['id'])
         # Clean up networks
         for network in cls.networks:
+            # Prevent locking race condition caused by DHCP and network_delete
+            # removing port at same time
+            time.sleep(2)
             cls.client.delete_network(network['id'])
         super(BaseNetworkTest, cls).tearDownClass()
 

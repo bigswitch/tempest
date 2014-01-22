@@ -15,6 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from tempest.api.network import base
 from tempest.common.utils import data_utils
 from tempest.test import attr
@@ -56,6 +58,8 @@ class FloatingIPTestJSON(base.BaseNetworkTest):
         cls.port = list()
         # Create two ports one each for Creation and Updating of floatingIP
         for i in range(2):
+            # prevent locking problem with close port DB changes
+            time.sleep(2)
             cls.create_port(cls.network)
 
     @attr(type='smoke')
