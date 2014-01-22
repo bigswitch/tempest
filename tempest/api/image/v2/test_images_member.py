@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -16,7 +14,7 @@ from tempest.api.image import base
 from tempest.test import attr
 
 
-class ImagesMemberTest(base.BaseV2MemeberImageTest):
+class ImagesMemberTest(base.BaseV2MemberImageTest):
     _interface = 'json'
 
     @attr(type='gate')

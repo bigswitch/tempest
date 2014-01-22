@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -31,6 +29,7 @@ class BaseImageTest(tempest.test.BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.set_network_resources()
         super(BaseImageTest, cls).setUpClass()
         cls.created_images = []
         cls._interface = 'json'
@@ -130,11 +129,11 @@ class BaseV2ImageTest(BaseImageTest):
             raise cls.skipException(msg)
 
 
-class BaseV2MemeberImageTest(BaseV2ImageTest):
+class BaseV2MemberImageTest(BaseV2ImageTest):
 
     @classmethod
     def setUpClass(cls):
-        super(BaseV2MemeberImageTest, cls).setUpClass()
+        super(BaseV2MemberImageTest, cls).setUpClass()
         if cls.config.compute.allow_tenant_isolation:
             creds = cls.isolated_creds.get_alt_creds()
             username, tenant_name, password = creds

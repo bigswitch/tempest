@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2012 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -28,6 +26,7 @@ class BaseObjectTest(tempest.test.BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.set_network_resources()
         super(BaseObjectTest, cls).setUpClass()
         if not cls.config.service_available.swift:
             skip_msg = ("%s skipped as swift is not available" % cls.__name__)
