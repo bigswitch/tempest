@@ -15,26 +15,14 @@
 
 from tempest.api.volume import base
 from tempest.common.utils import data_utils
-from tempest.services.volume.json.admin import volume_types_client
+from tempest import config
 from tempest.test import attr
 
+CONF = config.CONF
 
-class VolumeTypesTest(base.BaseVolumeV1Test):
+
+class VolumeTypesTest(base.BaseVolumeV1AdminTest):
     _interface = "json"
-
-    @classmethod
-    def setUpClass(cls):
-        super(VolumeTypesTest, cls).setUpClass()
-        adm_user = cls.config.identity.admin_username
-        adm_pass = cls.config.identity.admin_password
-        adm_tenant = cls.config.identity.admin_tenant_name
-        auth_url = cls.config.identity.uri
-
-        cls.client = volume_types_client.VolumeTypesClientJSON(cls.config,
-                                                               adm_user,
-                                                               adm_pass,
-                                                               auth_url,
-                                                               adm_tenant)
 
     def _delete_volume(self, volume_id):
         resp, _ = self.volumes_client.delete_volume(volume_id)
@@ -58,8 +46,8 @@ class VolumeTypesTest(base.BaseVolumeV1Test):
         volume = {}
         vol_name = data_utils.rand_name("volume-")
         vol_type_name = data_utils.rand_name("volume-type-")
-        proto = self.config.volume.storage_protocol
-        vendor = self.config.volume.vendor_name
+        proto = CONF.volume.storage_protocol
+        vendor = CONF.volume.vendor_name
         extra_specs = {"storage_protocol": proto,
                        "vendor_name": vendor}
         body = {}
@@ -101,8 +89,8 @@ class VolumeTypesTest(base.BaseVolumeV1Test):
         # Create/get volume type.
         body = {}
         name = data_utils.rand_name("volume-type-")
-        proto = self.config.volume.storage_protocol
-        vendor = self.config.volume.vendor_name
+        proto = CONF.volume.storage_protocol
+        vendor = CONF.volume.vendor_name
         extra_specs = {"storage_protocol": proto,
                        "vendor_name": vendor}
         resp, body = self.client.create_volume_type(

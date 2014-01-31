@@ -18,7 +18,9 @@ import re
 import subprocess
 
 import tempest.cli
+from tempest import config
 
+CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -29,6 +31,13 @@ class SimpleReadOnlyCinderClientTest(tempest.cli.ClientTestBase):
     These tests do not presume any content, nor do they create
     their own. They only verify the structure of output if present.
     """
+
+    @classmethod
+    def setUpClass(cls):
+        if not CONF.service_available.cinder:
+            msg = ("%s skipped as Cinder is not available" % cls.__name__)
+            raise cls.skipException(msg)
+        super(SimpleReadOnlyCinderClientTest, cls).setUpClass()
 
     def test_cinder_fake_action(self):
         self.assertRaises(subprocess.CalledProcessError,
@@ -47,6 +56,12 @@ class SimpleReadOnlyCinderClientTest(tempest.cli.ClientTestBase):
 
     def test_cinder_volumes_list(self):
         self.cinder('list')
+        self.cinder('list', params='--all-tenants 1')
+        self.cinder('list', params='--all-tenants 0')
+        self.assertRaises(subprocess.CalledProcessError,
+                          self.cinder,
+                          'list',
+                          params='--all-tenants bad')
 
     def test_cinder_quota_class_show(self):
         """This CLI can accept and string as param."""
@@ -57,14 +72,14 @@ class SimpleReadOnlyCinderClientTest(tempest.cli.ClientTestBase):
     def test_cinder_quota_defaults(self):
         """This CLI can accept and string as param."""
         roles = self.parser.listing(self.cinder('quota-defaults',
-                                                params=self.identity.
+                                                params=CONF.identity.
                                                 admin_tenant_name))
         self.assertTableStruct(roles, ['Property', 'Value'])
 
     def test_cinder_quota_show(self):
         """This CLI can accept and string as param."""
         roles = self.parser.listing(self.cinder('quota-show',
-                                                params=self.identity.
+                                                params=CONF.identity.
                                                 admin_tenant_name))
         self.assertTableStruct(roles, ['Property', 'Value'])
 
@@ -130,7 +145,7 @@ class SimpleReadOnlyCinderClientTest(tempest.cli.ClientTestBase):
         self.cinder('list', flags='--retries 3')
 
     def test_cinder_region_list(self):
-        region = self.config.volume.region
+        region = CONF.volume.region
         if not region:
-            region = self.config.identity.region
+            region = CONF.identity.region
         self.cinder('list', flags='--os-region-name ' + region)

@@ -17,14 +17,17 @@ import json
 import urllib
 
 from tempest.common.rest_client import RestClient
+from tempest import config
+
+CONF = config.CONF
 
 
 class FlavorsV3ClientJSON(RestClient):
 
-    def __init__(self, config, username, password, auth_url, tenant_name=None):
-        super(FlavorsV3ClientJSON, self).__init__(config, username, password,
+    def __init__(self, username, password, auth_url, tenant_name=None):
+        super(FlavorsV3ClientJSON, self).__init__(username, password,
                                                   auth_url, tenant_name)
-        self.service = self.config.compute.catalog_v3_type
+        self.service = CONF.compute.catalog_v3_type
 
     def list_flavors(self, params=None):
         url = 'flavors'
@@ -63,7 +66,7 @@ class FlavorsV3ClientJSON(RestClient):
         if kwargs.get('swap'):
             post_body['swap'] = kwargs.get('swap')
         if kwargs.get('rxtx'):
-            post_body['rxtx_factor'] = kwargs.get('rxtx')
+            post_body['os-flavor-rxtx:rxtx_factor'] = kwargs.get('rxtx')
         if kwargs.get('is_public'):
             post_body['flavor-access:is_public'] = kwargs.get('is_public')
         post_body = json.dumps({'flavor': post_body})

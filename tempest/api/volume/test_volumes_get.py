@@ -13,10 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from testtools.matchers import ContainsAll
+
 from tempest.api.volume import base
 from tempest.common.utils import data_utils
+from tempest import config
 from tempest.test import attr
 from tempest.test import services
+
+CONF = config.CONF
 
 
 class VolumesGetTest(base.BaseVolumeV1Test):
@@ -66,16 +71,16 @@ class VolumesGetTest(base.BaseVolumeV1Test):
         self.assertEqual(200, resp.status)
         self.assertEqual(v_name,
                          fetched_volume['display_name'],
-                         'The fetched Volume is different '
+                         'The fetched Volume name is different '
                          'from the created Volume')
         self.assertEqual(volume['id'],
                          fetched_volume['id'],
-                         'The fetched Volume is different '
+                         'The fetched Volume id is different '
                          'from the created Volume')
-        self.assertEqual(metadata,
-                         fetched_volume['metadata'],
-                         'The fetched Volume is different '
-                         'from the created Volume')
+        self.assertThat(fetched_volume['metadata'].items(),
+                        ContainsAll(metadata.items()),
+                        'The fetched Volume metadata misses data '
+                        'from the created Volume')
 
         # NOTE(jdg): Revert back to strict true/false checking
         # after fix for bug #1227837 merges
@@ -102,7 +107,10 @@ class VolumesGetTest(base.BaseVolumeV1Test):
         self.assertEqual(volume['id'], updated_volume['id'])
         self.assertEqual(new_v_name, updated_volume['display_name'])
         self.assertEqual(new_desc, updated_volume['display_description'])
-        self.assertEqual(metadata, updated_volume['metadata'])
+        self.assertThat(updated_volume['metadata'].items(),
+                        ContainsAll(metadata.items()),
+                        'The fetched Volume metadata misses data '
+                        'from the created Volume')
 
         # NOTE(jdg): Revert back to strict true/false checking
         # after fix for bug #1227837 merges
@@ -112,18 +120,6 @@ class VolumesGetTest(base.BaseVolumeV1Test):
         if 'imageRef' not in kwargs:
             self.assertEqual(boot_flag, False)
 
-    @attr(type='gate')
-    def test_volume_get_metadata_none(self):
-        # Create a volume without passing metadata, get details, and delete
-
-        # Create a volume without metadata
-        volume = self.create_volume(metadata={})
-
-        # GET Volume
-        resp, fetched_volume = self.client.get_volume(volume['id'])
-        self.assertEqual(200, resp.status)
-        self.assertEqual(fetched_volume['metadata'], {})
-
     @attr(type='smoke')
     def test_volume_create_get_update_delete(self):
         self._volume_create_get_update_delete()
@@ -131,8 +127,7 @@ class VolumesGetTest(base.BaseVolumeV1Test):
     @attr(type='smoke')
     @services('image')
     def test_volume_create_get_update_delete_from_image(self):
-        self._volume_create_get_update_delete(imageRef=self.
-                                              config.compute.image_ref)
+        self._volume_create_get_update_delete(imageRef=CONF.compute.image_ref)
 
     @attr(type='gate')
     def test_volume_create_get_update_delete_as_clone(self):

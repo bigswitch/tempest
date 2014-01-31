@@ -16,13 +16,11 @@
 import re
 import subprocess
 
-from oslo.config import cfg
-
 import tempest.cli
+from tempest import config
 from tempest.openstack.common import log as logging
 
-CONF = cfg.CONF
-
+CONF = config.CONF
 
 LOG = logging.getLogger(__name__)
 
@@ -34,6 +32,13 @@ class SimpleReadOnlyGlanceClientTest(tempest.cli.ClientTestBase):
     These tests do not presume any content, nor do they create
     their own. They only verify the structure of output if present.
     """
+
+    @classmethod
+    def setUpClass(cls):
+        if not CONF.service_available.glance:
+            msg = ("%s skipped as Glance is not available" % cls.__name__)
+            raise cls.skipException(msg)
+        super(SimpleReadOnlyGlanceClientTest, cls).setUpClass()
 
     def test_glance_fake_action(self):
         self.assertRaises(subprocess.CalledProcessError,
@@ -48,7 +53,7 @@ class SimpleReadOnlyGlanceClientTest(tempest.cli.ClientTestBase):
             'Size', 'Status'])
 
     def test_glance_member_list(self):
-        tenant_name = '--tenant-id %s' % self.identity.admin_tenant_name
+        tenant_name = '--tenant-id %s' % CONF.identity.admin_tenant_name
         out = self.glance('member-list',
                           params=tenant_name)
         endpoints = self.parser.listing(out)

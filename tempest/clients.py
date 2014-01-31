@@ -17,7 +17,6 @@ from tempest import config
 from tempest import exceptions
 from tempest.openstack.common import log as logging
 from tempest.services.baremetal.v1.client_json import BaremetalClientJSON
-from tempest.services.baremetal.v1.client_xml import BaremetalClientXML
 from tempest.services import botoclients
 from tempest.services.compute.json.aggregates_client import \
     AggregatesClientJSON
@@ -185,7 +184,6 @@ class Manager(object):
         :param password: Override of the password
         :param tenant_name: Override of the tenant name
         """
-        self.config = CONF
         # If no creds are provided, we fall back on the defaults
         # in the config file for the Compute API.
         self.username = username or CONF.identity.username
@@ -202,12 +200,12 @@ class Manager(object):
         self.auth_url = CONF.identity.uri
         self.auth_url_v3 = CONF.identity.uri_v3
 
-        client_args = (CONF, self.username, self.password,
+        client_args = (self.username, self.password,
                        self.auth_url, self.tenant_name)
 
         if self.auth_url_v3:
             auth_version = 'v3'
-            client_args_v3_auth = (CONF, self.username,
+            client_args_v3_auth = (self.username,
                                    self.password, self.auth_url_v3,
                                    self.tenant_name, auth_version)
         else:
@@ -217,7 +215,6 @@ class Manager(object):
 
         if interface == 'xml':
             self.certificates_client = CertificatesClientXML(*client_args)
-            self.baremetal_client = BaremetalClientXML(*client_args)
             self.servers_client = ServersClientXML(*client_args)
             self.limits_client = LimitsClientXML(*client_args)
             self.images_client = ImagesClientXML(*client_args)
@@ -233,7 +230,7 @@ class Manager(object):
             self.volume_types_client = VolumeTypesClientXML(*client_args)
             self.identity_client = IdentityClientXML(*client_args)
             self.identity_v3_client = IdentityV3ClientXML(*client_args)
-            self.token_client = TokenClientXML(CONF)
+            self.token_client = TokenClientXML()
             self.security_groups_client = SecurityGroupsClientXML(
                 *client_args)
             self.interfaces_client = InterfacesClientXML(*client_args)
@@ -289,7 +286,7 @@ class Manager(object):
             self.volume_types_client = VolumeTypesClientJSON(*client_args)
             self.identity_client = IdentityClientJSON(*client_args)
             self.identity_v3_client = IdentityV3ClientJSON(*client_args)
-            self.token_client = TokenClientJSON(CONF)
+            self.token_client = TokenClientJSON()
             self.security_groups_client = SecurityGroupsClientJSON(
                 *client_args)
             self.interfaces_v3_client = InterfacesV3ClientJSON(*client_args)

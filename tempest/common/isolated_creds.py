@@ -146,18 +146,28 @@ class IsolatedCreds(object):
         else:
             self.identity_admin_client.tenants.delete(tenant)
 
-    def _create_creds(self, suffix=None, admin=False):
-        data_utils.rand_name_root = data_utils.rand_name(self.name)
-        if suffix:
-            data_utils.rand_name_root += suffix
-        tenant_name = data_utils.rand_name_root + "-tenant"
+    def _create_creds(self, suffix="", admin=False):
+        """Create random credentials under the following schema.
+
+        If the name contains a '.' is the full class path of something, and
+        we don't really care. If it isn't, it's probably a meaningful name,
+        so use it.
+
+        For logging purposes, -user and -tenant are long and redundant,
+        don't use them. The user# will be sufficient to figure it out.
+        """
+        if '.' in self.name:
+            root = ""
+        else:
+            root = self.name
+
+        tenant_name = data_utils.rand_name(root) + suffix
         tenant_desc = tenant_name + "-desc"
         tenant = self._create_tenant(name=tenant_name,
                                      description=tenant_desc)
-        if suffix:
-            data_utils.rand_name_root += suffix
-        username = data_utils.rand_name_root + "-user"
-        email = data_utils.rand_name_root + "@example.com"
+
+        username = data_utils.rand_name(root) + suffix
+        email = data_utils.rand_name(root) + suffix + "@example.com"
         user = self._create_user(username, self.password,
                                  tenant, email)
         if admin:
@@ -237,7 +247,7 @@ class IsolatedCreds(object):
     def _create_network(self, name, tenant_id):
         if self.tempest_client:
             resp, resp_body = self.network_admin_client.create_network(
-                name, tenant_id=tenant_id)
+                name=name, tenant_id=tenant_id)
         else:
             body = {'network': {'tenant_id': tenant_id, 'name': name}}
             resp_body = self.network_admin_client.create_network(body)
@@ -257,15 +267,18 @@ class IsolatedCreds(object):
                     if self.network_resources:
                         resp, resp_body = self.network_admin_client.\
                             create_subnet(
-                                network_id, str(subnet_cidr),
+                                network_id=network_id, cidr=str(subnet_cidr),
                                 name=subnet_name,
                                 tenant_id=tenant_id,
-                                enable_dhcp=self.network_resources['dhcp'])
+                                enable_dhcp=self.network_resources['dhcp'],
+                                ip_version=4)
                     else:
                         resp, resp_body = self.network_admin_client.\
-                            create_subnet(network_id, str(subnet_cidr),
+                            create_subnet(network_id=network_id,
+                                          cidr=str(subnet_cidr),
                                           name=subnet_name,
-                                          tenant_id=tenant_id)
+                                          tenant_id=tenant_id,
+                                          ip_version=4)
                 else:
                     body['subnet']['cidr'] = str(subnet_cidr)
                     resp_body = self.network_admin_client.create_subnet(body)
@@ -459,7 +472,11 @@ class IsolatedCreds(object):
         net_client = self.network_admin_client
         for cred in self.isolated_net_resources:
             network, subnet, router = self.isolated_net_resources.get(cred)
-            if self.network_resources.get('router'):
+            LOG.debug("Clearing network: %(network)s, "
+                      "subnet: %(subnet)s, router: %(router)s",
+                      {'network': network, 'subnet': subnet, 'router': router})
+            if (not self.network_resources or
+                self.network_resources.get('router')):
                 try:
                     if self.tempest_client:
                         net_client.remove_router_interface_with_subnet_id(
@@ -472,13 +489,16 @@ class IsolatedCreds(object):
                              router['name'])
                     pass
                 self._clear_isolated_router(router['id'], router['name'])
-            if self.network_resources.get('network'):
+            if (not self.network_resources or
+                self.network_resources.get('network')):
                 # TODO(mlavalle) This method call will be removed once patch
                 # https://review.openstack.org/#/c/46563/ merges in Neutron
                 self._cleanup_ports(network['id'])
-            if self.network_resources.get('subnet'):
+            if (not self.network_resources or
+                self.network_resources.get('subnet')):
                 self._clear_isolated_subnet(subnet['id'], subnet['name'])
-            if self.network_resources.get('network'):
+            if (not self.network_resources or
+                self.network_resources.get('network')):
                 self._clear_isolated_network(network['id'], network['name'])
 
     def clear_isolated_creds(self):

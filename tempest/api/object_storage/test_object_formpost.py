@@ -116,21 +116,3 @@ class ObjectFormPostTest(base.BaseObjectTest):
         self.assertIn(int(resp['status']), HTTP_SUCCESS)
         self.assertHeaders(resp, "Object", "GET")
         self.assertEqual(body, "hello world")
-
-    @attr(type=['gate', 'negative'])
-    def test_post_object_using_form_expired(self):
-        body, content_type = self.get_multipart_form(expires=1)
-        time.sleep(2)
-
-        headers = {'Content-Type': content_type,
-                   'Content-Length': str(len(body))}
-
-        url = "%s/%s/%s" % (self.container_client.base_url,
-                            self.container_name,
-                            self.object_name)
-
-        # Use a raw request, otherwise authentication headers are used
-        resp, body = self.object_client.http_obj.request(url, "POST",
-                                                         body, headers=headers)
-        self.assertEqual(int(resp['status']), 401)
-        self.assertIn('FormPost: Form Expired', body)

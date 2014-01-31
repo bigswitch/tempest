@@ -18,9 +18,12 @@ import time
 
 from tempest import clients
 from tempest.common.utils import data_utils
+from tempest import config
 from tempest import exceptions
 from tempest.openstack.common import log as logging
 import tempest.test
+
+CONF = config.CONF
 
 LOG = logging.getLogger(__name__)
 
@@ -53,8 +56,7 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         cls.set_network_resources()
         super(BaseNetworkTest, cls).setUpClass()
         os = clients.Manager(interface=cls._interface)
-        cls.network_cfg = os.config.network
-        if not cls.config.service_available.neutron:
+        if not CONF.service_available.neutron:
             raise cls.skipException("Neutron support is required")
         cls.client = os.network_client
         cls.networks = []
@@ -119,23 +121,25 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         """Wrapper utility that returns a test network."""
         network_name = network_name or data_utils.rand_name('test-network-')
 
-        resp, body = cls.client.create_network(network_name)
+        resp, body = cls.client.create_network(name=network_name)
         network = body['network']
         cls.networks.append(network)
         return network
 
     @classmethod
-    def create_subnet(cls, network):
+    def create_subnet(cls, network, ip_version=4):
         """Wrapper utility that returns a test subnet."""
-        cidr = netaddr.IPNetwork(cls.network_cfg.tenant_network_cidr)
-        mask_bits = cls.network_cfg.tenant_network_mask_bits
+        cidr = netaddr.IPNetwork(CONF.network.tenant_network_cidr)
+        mask_bits = CONF.network.tenant_network_mask_bits
         # Find a cidr that is not in use yet and create a subnet with it
         body = None
         failure = None
         for subnet_cidr in cidr.subnet(mask_bits):
             try:
-                resp, body = cls.client.create_subnet(network['id'],
-                                                      str(subnet_cidr))
+                resp, body = cls.client.create_subnet(
+                    network_id=network['id'],
+                    cidr=str(subnet_cidr),
+                    ip_version=ip_version)
                 break
             except exceptions.BadRequest as e:
                 is_overlapping_cidr = 'overlaps with another subnet' in str(e)
@@ -154,7 +158,7 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
     @classmethod
     def create_port(cls, network):
         """Wrapper utility that returns a test port."""
-        resp, body = cls.client.create_port(network['id'])
+        resp, body = cls.client.create_port(network_id=network['id'])
         port = body['port']
         cls.ports.append(port)
         return port
@@ -262,9 +266,9 @@ class BaseAdminNetworkTest(BaseNetworkTest):
     @classmethod
     def setUpClass(cls):
         super(BaseAdminNetworkTest, cls).setUpClass()
-        admin_username = cls.config.compute_admin.username
-        admin_password = cls.config.compute_admin.password
-        admin_tenant = cls.config.compute_admin.tenant_name
+        admin_username = CONF.compute_admin.username
+        admin_password = CONF.compute_admin.password
+        admin_tenant = CONF.compute_admin.tenant_name
         if not (admin_username and admin_password and admin_tenant):
             msg = ("Missing Administrative Network API credentials "
                    "in configuration.")

@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2014 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -25,9 +23,9 @@ import tempest.services.telemetry.telemetry_client_base as client
 
 class TelemetryClientXML(client.TelemetryClientBase):
 
-    def get_rest_client(self, config, username,
+    def get_rest_client(self, username,
                         password, auth_url, tenant_name=None):
-        return RestClientXML(config, username, password, auth_url, tenant_name)
+        return RestClientXML(username, password, auth_url, tenant_name)
 
     def _parse_array(self, body):
         array = []

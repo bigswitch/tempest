@@ -55,7 +55,7 @@ class ImagesOneServerTestJSON(base.BaseV2ComputeTest):
     def setUpClass(cls):
         super(ImagesOneServerTestJSON, cls).setUpClass()
         cls.client = cls.images_client
-        if not cls.config.service_available.glance:
+        if not CONF.service_available.glance:
             skip_msg = ("%s skipped as glance is not available" % cls.__name__)
             raise cls.skipException(skip_msg)
 
@@ -69,7 +69,7 @@ class ImagesOneServerTestJSON(base.BaseV2ComputeTest):
         cls.image_ids = []
 
         if cls.multi_user:
-            if cls.config.compute.allow_tenant_isolation:
+            if CONF.compute.allow_tenant_isolation:
                 creds = cls.isolated_creds.get_alt_creds()
                 username, tenant_name, password = creds
                 cls.alt_manager = clients.Manager(username=username,
@@ -119,10 +119,6 @@ class ImagesOneServerTestJSON(base.BaseV2ComputeTest):
 
     @attr(type=['gate'])
     def test_create_image_specify_multibyte_character_image_name(self):
-        if self.__class__._interface == "xml":
-            # NOTE(sdague): not entirely accurage, but we'd need a ton of work
-            # in our XML client to make this good
-            raise self.skipException("Not testable in XML")
         # prefix character is:
         # http://www.fileformat.info/info/unicode/char/1F4A9/index.htm
         utf8_name = data_utils.rand_name(u'\xF0\x9F\x92\xA9')

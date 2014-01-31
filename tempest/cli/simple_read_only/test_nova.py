@@ -15,15 +15,14 @@
 
 import subprocess
 
-from oslo.config import cfg
 import testtools
 
 import tempest.cli
+from tempest import config
 from tempest.openstack.common import log as logging
 import tempest.test
 
-CONF = cfg.CONF
-
+CONF = config.CONF
 
 LOG = logging.getLogger(__name__)
 
@@ -41,6 +40,13 @@ class SimpleReadOnlyNovaClientTest(tempest.cli.ClientTestBase):
     * initially just check return codes, and later test command outputs
 
     """
+
+    @classmethod
+    def setUpClass(cls):
+        if not CONF.service_available.nova:
+            msg = ("%s skipped as Nova is not available" % cls.__name__)
+            raise cls.skipException(msg)
+        super(SimpleReadOnlyNovaClientTest, cls).setUpClass()
 
     def test_admin_fake_action(self):
         self.assertRaises(subprocess.CalledProcessError,

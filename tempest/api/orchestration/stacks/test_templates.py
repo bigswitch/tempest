@@ -10,15 +10,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 from tempest.api.orchestration import base
 from tempest.common.utils import data_utils
-from tempest import exceptions
 from tempest.test import attr
-
-
-LOG = logging.getLogger(__name__)
 
 
 class TemplateYAMLTestJSON(base.BaseOrchestrationTest):
@@ -58,14 +52,6 @@ Resources:
         resp, parameters = self.client.validate_template(self.template,
                                                          self.parameters)
         self.assertEqual('200', resp['status'])
-
-    @attr(type=['gate', 'negative'])
-    def test_validate_template_url(self):
-        """Validating template passing url to it."""
-        self.assertRaises(exceptions.BadRequest,
-                          self.client.validate_template_url,
-                          template_url=self.invalid_template_url,
-                          parameters=self.parameters)
 
 
 class TemplateAWSTestJSON(TemplateYAMLTestJSON):
