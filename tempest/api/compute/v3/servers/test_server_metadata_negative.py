@@ -1,5 +1,4 @@
-# Copyright 2012 OpenStack Foundation
-# All Rights Reserved.
+# Copyright 2014 NEC Corporation.  All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -19,12 +18,12 @@ from tempest import exceptions
 from tempest import test
 
 
-class ServerMetadataNegativeTestJSON(base.BaseV2ComputeTest):
+class ServerMetadataV3NegativeTestJSON(base.BaseV3ComputeTest):
     _interface = 'json'
 
     @classmethod
     def setUpClass(cls):
-        super(ServerMetadataNegativeTestJSON, cls).setUpClass()
+        super(ServerMetadataV3NegativeTestJSON, cls).setUpClass()
         cls.client = cls.servers_client
         cls.quotas = cls.quotas_client
         cls.admin_client = cls._get_identity_admin_client()
@@ -157,7 +156,3 @@ class ServerMetadataNegativeTestJSON(base.BaseV2ComputeTest):
         self.assertRaises(exceptions.BadRequest,
                           self.client.set_server_metadata,
                           self.server_id, meta=meta, no_metadata_field=True)
-
-
-class ServerMetadataNegativeTestXML(ServerMetadataNegativeTestJSON):
-    _interface = 'xml'

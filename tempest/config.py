@@ -667,7 +667,7 @@ InputScenarioGroup = [
                default='^cirros-0.3.1-x86_64-uec$',
                help="Matching images become parameters for scenario tests"),
     cfg.StrOpt('flavor_regex',
-               default='^m1.(micro|nano|tiny)$',
+               default='^m1.nano$',
                help="Matching flavors become parameters for scenario tests"),
     cfg.StrOpt('non_ssh_image_regex',
                default='^.*[Ww]in.*$',
@@ -727,9 +727,7 @@ class TempestConfigPrivate(object):
 
         path = os.path.join(conf_dir, conf_file)
 
-        if not (os.path.isfile(path) or
-                'TEMPEST_CONFIG_DIR' in os.environ or
-                'TEMPEST_CONFIG' in os.environ):
+        if not os.path.isfile(path):
             path = failsafe_path
 
         # only parse the config file if we expect one to exist. This is needed
