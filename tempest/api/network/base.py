@@ -50,6 +50,8 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         neutron as True
     """
 
+    force_tenant_isolation = False
+
     @classmethod
     def setUpClass(cls):
         # Create no network resources for these test.
@@ -58,6 +60,10 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         os = clients.Manager(interface=cls._interface)
         if not CONF.service_available.neutron:
             raise cls.skipException("Neutron support is required")
+
+        os = cls.get_client_manager()
+
+        cls.network_cfg = CONF.network
         cls.client = os.network_client
         cls.networks = []
         cls.subnets = []
@@ -116,6 +122,7 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
             # removing port at same time
             time.sleep(4)
             cls.client.delete_network(network['id'])
+        cls.clear_isolated_creds()
         super(BaseNetworkTest, cls).tearDownClass()
 
     @classmethod
@@ -275,5 +282,14 @@ class BaseAdminNetworkTest(BaseNetworkTest):
             msg = ("Missing Administrative Network API credentials "
                    "in configuration.")
             raise cls.skipException(msg)
-        cls.admin_manager = clients.AdminManager(interface=cls._interface)
-        cls.admin_client = cls.admin_manager.network_client
+        if (CONF.compute.allow_tenant_isolation or
+            cls.force_tenant_isolation is True):
+            creds = cls.isolated_creds.get_admin_creds()
+            admin_username, admin_tenant_name, admin_password = creds
+            cls.os_adm = clients.Manager(username=admin_username,
+                                         password=admin_password,
+                                         tenant_name=admin_tenant_name,
+                                         interface=cls._interface)
+        else:
+            cls.os_adm = clients.ComputeAdminManager(interface=cls._interface)
+        cls.admin_client = cls.os_adm.network_client
