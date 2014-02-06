@@ -104,6 +104,7 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
             cls.client.delete_pool(pool['id'])
         # Clean up ports
         for port in cls.ports:
+            time.sleep(4)
             cls.client.delete_port(port['id'])
         # Clean up subnets
         for subnet in cls.subnets:
