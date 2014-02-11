@@ -46,8 +46,7 @@ IdentityGroup = [
     cfg.StrOpt('auth_version',
                default='v2',
                help="Identity API version to be used for authentication "
-                    "for API tests. Planned to extend to tenant isolation, "
-                    "scenario tests and CLI tests."),
+                    "for API tests."),
     cfg.StrOpt('region',
                default='RegionOne',
                help="The identity region name to use. Also used as the other "
@@ -786,7 +785,7 @@ class TempestConfigPrivate(object):
         self.compute_feature_enabled = cfg.CONF['compute-feature-enabled']
         self.identity = cfg.CONF.identity
         self.identity_feature_enabled = cfg.CONF['identity-feature-enabled']
-        self.images = cfg.CONF.image
+        self.image = cfg.CONF.image
         self.image_feature_enabled = cfg.CONF['image-feature-enabled']
         self.network = cfg.CONF.network
         self.network_feature_enabled = cfg.CONF['network-feature-enabled']
