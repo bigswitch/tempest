@@ -63,8 +63,6 @@ from tempest.services.compute.v3.json.flavors_client import FlavorsV3ClientJSON
 from tempest.services.compute.v3.json.hosts_client import HostsV3ClientJSON
 from tempest.services.compute.v3.json.hypervisor_client import \
     HypervisorV3ClientJSON
-from tempest.services.compute.v3.json.instance_usage_audit_log_client import \
-    InstanceUsagesAuditLogV3ClientJSON
 from tempest.services.compute.v3.json.interfaces_client import \
     InterfacesV3ClientJSON
 from tempest.services.compute.v3.json.keypairs_client import \
@@ -75,8 +73,6 @@ from tempest.services.compute.v3.json.servers_client import \
     ServersV3ClientJSON
 from tempest.services.compute.v3.json.services_client import \
     ServicesV3ClientJSON
-from tempest.services.compute.v3.json.tenant_usages_client import \
-    TenantUsagesV3ClientJSON
 from tempest.services.compute.v3.json.version_client import \
     VersionV3ClientJSON
 from tempest.services.compute.xml.aggregates_client import AggregatesClientXML
@@ -156,6 +152,8 @@ from tempest.services.volume.json.extensions_client import \
     ExtensionsClientJSON as VolumeExtensionClientJSON
 from tempest.services.volume.json.snapshots_client import SnapshotsClientJSON
 from tempest.services.volume.json.volumes_client import VolumesClientJSON
+from tempest.services.volume.v2.json.volumes_client import VolumesV2ClientJSON
+from tempest.services.volume.v2.xml.volumes_client import VolumesV2ClientXML
 from tempest.services.volume.xml.admin.volume_hosts_client import \
     VolumeHostsClientXML
 from tempest.services.volume.xml.admin.volume_types_client import \
@@ -216,6 +214,7 @@ class Manager(object):
                 auth_provider)
             self.snapshots_client = SnapshotsClientXML(auth_provider)
             self.volumes_client = VolumesClientXML(auth_provider)
+            self.volumes_v2_client = VolumesV2ClientXML(auth_provider)
             self.volume_types_client = VolumeTypesClientXML(
                 auth_provider)
             self.identity_client = IdentityClientXML(auth_provider)
@@ -280,6 +279,7 @@ class Manager(object):
                 auth_provider)
             self.snapshots_client = SnapshotsClientJSON(auth_provider)
             self.volumes_client = VolumesClientJSON(auth_provider)
+            self.volumes_v2_client = VolumesV2ClientJSON(auth_provider)
             self.volume_types_client = VolumeTypesClientJSON(
                 auth_provider)
             self.identity_client = IdentityClientJSON(auth_provider)
@@ -305,8 +305,6 @@ class Manager(object):
             self.aggregates_client = AggregatesClientJSON(
                 auth_provider)
             self.services_client = ServicesClientJSON(auth_provider)
-            self.tenant_usages_v3_client = TenantUsagesV3ClientJSON(
-                auth_provider)
             self.tenant_usages_client = TenantUsagesClientJSON(
                 auth_provider)
             self.version_v3_client = VersionV3ClientJSON(auth_provider)
@@ -321,8 +319,6 @@ class Manager(object):
                 auth_provider)
             self.instance_usages_audit_log_client = \
                 InstanceUsagesAuditLogClientJSON(auth_provider)
-            self.instance_usages_audit_log_v3_client = \
-                InstanceUsagesAuditLogV3ClientJSON(auth_provider)
             self.volume_hosts_client = VolumeHostsClientJSON(
                 auth_provider)
             self.volumes_extension_client = VolumeExtensionClientJSON(
