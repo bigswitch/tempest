@@ -58,7 +58,7 @@ class SecurityGroupsClientJSON(RestClient):
             'description': description,
         }
         post_body = json.dumps({'security_group': post_body})
-        resp, body = self.post('os-security-groups', post_body, self.headers)
+        resp, body = self.post('os-security-groups', post_body)
         body = json.loads(body)
         return resp, body['security_group']
 
@@ -77,7 +77,7 @@ class SecurityGroupsClientJSON(RestClient):
             post_body['description'] = description
         post_body = json.dumps({'security_group': post_body})
         resp, body = self.put('os-security-groups/%s' % str(security_group_id),
-                              post_body, self.headers)
+                              post_body)
         body = json.loads(body)
         return resp, body['security_group']
 
@@ -107,7 +107,7 @@ class SecurityGroupsClientJSON(RestClient):
         }
         post_body = json.dumps({'security_group_rule': post_body})
         url = 'os-security-group-rules'
-        resp, body = self.post(url, post_body, self.headers)
+        resp, body = self.post(url, post_body)
         body = json.loads(body)
         return resp, body['security_group_rule']
 
@@ -123,3 +123,10 @@ class SecurityGroupsClientJSON(RestClient):
             if sg['id'] == security_group_id:
                 return resp, sg['rules']
         raise exceptions.NotFound('No such Security Group')
+
+    def is_resource_deleted(self, id):
+        try:
+            self.get_security_group(id)
+        except exceptions.NotFound:
+            return True
+        return False
