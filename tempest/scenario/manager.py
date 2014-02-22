@@ -99,9 +99,11 @@ class OfficialClientManager(tempest.manager.Manager):
 
         # Create our default Nova client to use in testing
         service_type = CONF.compute.catalog_type
+        endpoint_type = CONF.compute.endpoint_type
         return novaclient.client.Client(self.NOVACLIENT_VERSION,
                                         *client_args,
                                         service_type=service_type,
+                                        endpoint_type=endpoint_type,
                                         region_name=region,
                                         no_cache=True,
                                         insecure=dscv,
@@ -110,9 +112,10 @@ class OfficialClientManager(tempest.manager.Manager):
     def _get_image_client(self):
         token = self.identity_client.auth_token
         region = CONF.identity.region
+        endpoint_type = CONF.image.endpoint_type
         endpoint = self.identity_client.service_catalog.url_for(
             attr='region', filter_value=region,
-            service_type=CONF.image.catalog_type, endpoint_type='publicURL')
+            service_type=CONF.image.catalog_type, endpoint_type=endpoint_type)
         dscv = CONF.identity.disable_ssl_certificate_validation
         return glanceclient.Client('1', endpoint=endpoint, token=token,
                                    insecure=dscv)
@@ -120,12 +123,14 @@ class OfficialClientManager(tempest.manager.Manager):
     def _get_volume_client(self, username, password, tenant_name):
         auth_url = CONF.identity.uri
         region = CONF.identity.region
+        endpoint_type = CONF.volume.endpoint_type
         return cinderclient.client.Client(self.CINDERCLIENT_VERSION,
                                           username,
                                           password,
                                           tenant_name,
                                           auth_url,
                                           region_name=region,
+                                          endpoint_type=endpoint_type,
                                           http_log_debug=True)
 
     def _get_object_storage_client(self, username, password, tenant_name):
@@ -149,9 +154,12 @@ class OfficialClientManager(tempest.manager.Manager):
         except keystoneclient.exceptions.Conflict:
             pass
 
+        endpoint_type = CONF.object_storage.endpoint_type
+        os_options = {'endpoint_type': endpoint_type}
         return swiftclient.Connection(auth_url, username, password,
                                       tenant_name=tenant_name,
-                                      auth_version='2')
+                                      auth_version='2',
+                                      os_options=os_options)
 
     def _get_orchestration_client(self, username=None, password=None,
                                   tenant_name=None):
@@ -166,6 +174,7 @@ class OfficialClientManager(tempest.manager.Manager):
 
         keystone = self._get_identity_client(username, password, tenant_name)
         region = CONF.identity.region
+        endpoint_type = CONF.orchestration.endpoint_type
         token = keystone.auth_token
         service_type = CONF.orchestration.catalog_type
         try:
@@ -173,7 +182,7 @@ class OfficialClientManager(tempest.manager.Manager):
                 attr='region',
                 filter_value=region,
                 service_type=service_type,
-                endpoint_type='publicURL')
+                endpoint_type=endpoint_type)
         except keystoneclient.exceptions.EndpointNotFound:
             return None
         else:
@@ -212,10 +221,12 @@ class OfficialClientManager(tempest.manager.Manager):
 
         auth_url = CONF.identity.uri
         dscv = CONF.identity.disable_ssl_certificate_validation
+        endpoint_type = CONF.network.endpoint_type
 
         return neutronclient.v2_0.client.Client(username=username,
                                                 password=password,
                                                 tenant_name=tenant_name,
+                                                endpoint_type=endpoint_type,
                                                 auth_url=auth_url,
                                                 insecure=dscv)
 
@@ -276,6 +287,41 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         return cls._get_credentials(cls.isolated_creds.get_admin_creds,
                                     'admin_')
 
+    @staticmethod
+    def cleanup_resource(resource, test_name):
+
+        LOG.debug("Deleting %r from shared resources of %s" %
+                  (resource, test_name))
+        try:
+            # OpenStack resources are assumed to have a delete()
+            # method which destroys the resource...
+            resource.delete()
+        except Exception as e:
+            # If the resource is already missing, mission accomplished.
+            # add status code as workaround for bug 1247568
+            if (e.__class__.__name__ == 'NotFound' or
+                    (hasattr(e, 'status_code') and e.status_code == 404)):
+                return
+            raise
+
+        def is_deletion_complete():
+            # Deletion testing is only required for objects whose
+            # existence cannot be checked via retrieval.
+            if isinstance(resource, dict):
+                return True
+            try:
+                resource.get()
+            except Exception as e:
+                # Clients are expected to return an exception
+                # called 'NotFound' if retrieval fails.
+                if e.__class__.__name__ == 'NotFound':
+                    return True
+                raise
+            return False
+
+        # Block until resource deletion has completed or timed-out
+        tempest.test.call_until_true(is_deletion_complete, 10, 1)
+
     @classmethod
     def tearDownClass(cls):
         # NOTE(jaypipes): Because scenario tests are typically run in a
@@ -285,38 +331,7 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         # the scenario test class object
         while cls.os_resources:
             thing = cls.os_resources.pop()
-            LOG.debug("Deleting %r from shared resources of %s" %
-                      (thing, cls.__name__))
-
-            try:
-                # OpenStack resources are assumed to have a delete()
-                # method which destroys the resource...
-                thing.delete()
-            except Exception as e:
-                # If the resource is already missing, mission accomplished.
-                # add status code as workaround for bug 1247568
-                if (e.__class__.__name__ == 'NotFound' or
-                    hasattr(e, 'status_code') and e.status_code == 404):
-                    continue
-                raise
-
-            def is_deletion_complete():
-                # Deletion testing is only required for objects whose
-                # existence cannot be checked via retrieval.
-                if isinstance(thing, dict):
-                    return True
-                try:
-                    thing.get()
-                except Exception as e:
-                    # Clients are expected to return an exception
-                    # called 'NotFound' if retrieval fails.
-                    if e.__class__.__name__ == 'NotFound':
-                        return True
-                    raise
-                return False
-
-            # Block until resource deletion has completed or timed-out
-            tempest.test.call_until_true(is_deletion_complete, 10, 1)
+            cls.cleanup_resource(thing, cls.__name__)
         cls.isolated_creds.clear_isolated_creds()
         super(OfficialClientTest, cls).tearDownClass()
 
@@ -537,6 +552,54 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         for server in servers:
             LOG.debug('Console output for %s', server.id)
             LOG.debug(server.get_console_output())
+
+    def wait_for_volume_status(self, status):
+        volume_id = self.volume.id
+        self.status_timeout(
+            self.volume_client.volumes, volume_id, status)
+
+    def _image_create(self, name, fmt, path, properties={}):
+        name = data_utils.rand_name('%s-' % name)
+        image_file = open(path, 'rb')
+        self.addCleanup(image_file.close)
+        params = {
+            'name': name,
+            'container_format': fmt,
+            'disk_format': fmt,
+            'is_public': 'True',
+        }
+        params.update(properties)
+        image = self.image_client.images.create(**params)
+        self.addCleanup(self.image_client.images.delete, image)
+        self.assertEqual("queued", image.status)
+        image.update(data=image_file)
+        return image.id
+
+    def glance_image_create(self):
+        qcow2_img_path = (CONF.scenario.img_dir + "/" +
+                          CONF.scenario.qcow2_img_file)
+        aki_img_path = CONF.scenario.img_dir + "/" + CONF.scenario.aki_img_file
+        ari_img_path = CONF.scenario.img_dir + "/" + CONF.scenario.ari_img_file
+        ami_img_path = CONF.scenario.img_dir + "/" + CONF.scenario.ami_img_file
+        LOG.debug("paths: img: %s, ami: %s, ari: %s, aki: %s"
+                  % (qcow2_img_path, ami_img_path, ari_img_path, aki_img_path))
+        try:
+            self.image = self._image_create('scenario-img',
+                                            'bare',
+                                            qcow2_img_path,
+                                            properties={'disk_format':
+                                                        'qcow2'})
+        except IOError:
+            LOG.debug("A qcow2 image was not got. Try to get a uec image.")
+            kernel = self._image_create('scenario-aki', 'aki', aki_img_path)
+            ramdisk = self._image_create('scenario-ari', 'ari', ari_img_path)
+            properties = {
+                'properties': {'kernel_id': kernel, 'ramdisk_id': ramdisk}
+            }
+            self.image = self._image_create('scenario-ami', 'ami',
+                                            path=ami_img_path,
+                                            properties=properties)
+        LOG.debug("image:%s" % self.image)
 
 
 class NetworkScenarioTest(OfficialClientTest):
@@ -1021,9 +1084,6 @@ class NetworkScenarioTest(OfficialClientTest):
         router = self._get_router(tenant_id)
         subnet = self._create_subnet(network)
         subnet.add_to_router(router.id)
-        self.networks.append(network)
-        self.subnets.append(subnet)
-        self.routers.append(router)
         return network, subnet, router
 
 
