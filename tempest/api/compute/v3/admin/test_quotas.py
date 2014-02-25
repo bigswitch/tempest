@@ -16,7 +16,6 @@
 from tempest.api.compute import base
 from tempest.common.utils import data_utils
 from tempest import config
-from tempest import exceptions
 from tempest import test
 
 CONF = config.CONF
@@ -53,6 +52,22 @@ class QuotasAdminV3Test(base.BaseV3ComputeAdminTest):
         self.assertEqual(sorted(expected_quota_set),
                          sorted(quota_set.keys()))
         self.assertEqual(quota_set['id'], self.demo_tenant_id)
+
+    @test.attr(type='smoke')
+    def test_get_quota_set_detail(self):
+        # Admin can get the detail of resource quota set for a tenant
+        expected_quota_set = self.default_quota_set | set(['id'])
+        expected_detail = {'reserved', 'limit', 'in_use'}
+        resp, quota_set = self.adm_client.get_quota_set_detail(
+            self.demo_tenant_id)
+        self.assertEqual(200, resp.status)
+        self.assertEqual(sorted(expected_quota_set), sorted(quota_set.keys()))
+        self.assertEqual(quota_set['id'], self.demo_tenant_id)
+        for quota in quota_set:
+            if quota == 'id':
+                continue
+            self.assertEqual(sorted(expected_detail),
+                             sorted(quota_set[quota].keys()))
 
     @test.attr(type='gate')
     def test_update_all_quota_resources_for_tenant(self):
@@ -95,56 +110,3 @@ class QuotasAdminV3Test(base.BaseV3ComputeAdminTest):
         resp, quota_set = self.adm_client.get_quota_set(tenant_id)
         self.assertEqual(200, resp.status)
         self.assertEqual(quota_set['ram'], 5120)
-
-    # TODO(afazekas): Add dedicated tenant to the skiped quota tests
-    # it can be moved into the setUpClass as well
-    @test.attr(type='gate')
-    def test_create_server_when_cpu_quota_is_full(self):
-        # Disallow server creation when tenant's vcpu quota is full
-        resp, quota_set = self.adm_client.get_quota_set(self.demo_tenant_id)
-        default_vcpu_quota = quota_set['cores']
-        vcpu_quota = 0  # Set the quota to zero to conserve resources
-
-        resp, quota_set = self.adm_client.update_quota_set(self.demo_tenant_id,
-                                                           force=True,
-                                                           cores=vcpu_quota)
-
-        self.addCleanup(self.adm_client.update_quota_set, self.demo_tenant_id,
-                        cores=default_vcpu_quota)
-        self.assertRaises(exceptions.OverLimit, self.create_test_server)
-
-    @test.attr(type='gate')
-    def test_create_server_when_memory_quota_is_full(self):
-        # Disallow server creation when tenant's memory quota is full
-        resp, quota_set = self.adm_client.get_quota_set(self.demo_tenant_id)
-        default_mem_quota = quota_set['ram']
-        mem_quota = 0  # Set the quota to zero to conserve resources
-
-        self.adm_client.update_quota_set(self.demo_tenant_id,
-                                         force=True,
-                                         ram=mem_quota)
-
-        self.addCleanup(self.adm_client.update_quota_set, self.demo_tenant_id,
-                        ram=default_mem_quota)
-        self.assertRaises(exceptions.OverLimit, self.create_test_server)
-
-    @test.attr(type='gate')
-    def test_update_quota_normal_user(self):
-        self.assertRaises(exceptions.Unauthorized,
-                          self.client.update_quota_set,
-                          self.demo_tenant_id,
-                          ram=0)
-
-    @test.attr(type=['negative', 'gate'])
-    def test_create_server_when_instances_quota_is_full(self):
-        # Once instances quota limit is reached, disallow server creation
-        resp, quota_set = self.adm_client.get_quota_set(self.demo_tenant_id)
-        default_instances_quota = quota_set['instances']
-        instances_quota = 0  # Set quota to zero to disallow server creation
-
-        self.adm_client.update_quota_set(self.demo_tenant_id,
-                                         force=True,
-                                         instances=instances_quota)
-        self.addCleanup(self.adm_client.update_quota_set, self.demo_tenant_id,
-                        instances=default_instances_quota)
-        self.assertRaises(exceptions.OverLimit, self.create_test_server)
