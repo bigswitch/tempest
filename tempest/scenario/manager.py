@@ -16,6 +16,7 @@
 
 import logging
 import os
+import six
 import subprocess
 
 import netaddr
@@ -371,7 +372,7 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         return keypair
 
     def get_remote_client(self, server_or_ip, username=None, private_key=None):
-        if isinstance(server_or_ip, basestring):
+        if isinstance(server_or_ip, six.string_types):
             ip = server_or_ip
         else:
             network_name_for_ssh = CONF.compute.network_for_ssh
@@ -512,7 +513,7 @@ class NetworkScenarioTest(OfficialClientTest):
         ports = self._list_ports(tenant_id=tenant_id)
         return len(ports)
 
-    def _create_subnet(self, network, namestart='subnet-smoke-'):
+    def _create_subnet(self, network, namestart='subnet-smoke-', **kwargs):
         """
         Create a subnet for the given network within the cidr block
         configured for tenant networks.
@@ -545,6 +546,7 @@ class NetworkScenarioTest(OfficialClientTest):
                     cidr=str_cidr,
                 ),
             )
+            body['subnet'].update(kwargs)
             try:
                 result = self.network_client.create_subnet(body=body)
                 break
@@ -701,6 +703,28 @@ class NetworkScenarioTest(OfficialClientTest):
             linux_client = self.get_remote_client(ip_address, username,
                                                   private_key)
             linux_client.validate_authentication()
+
+    def _check_remote_connectivity(self, source, dest, should_succeed=True):
+        """
+        check ping server via source ssh connection
+
+        :param source: RemoteClient: an ssh connection from which to ping
+        :param dest: and IP to ping against
+        :param should_succeed: boolean should ping succeed or not
+        :returns: boolean -- should_succeed == ping
+        :returns: ping is false if ping failed
+        """
+        def ping_remote():
+            try:
+                source.ping_host(dest)
+            except exceptions.SSHExecCommandFailed:
+                LOG.exception('Failed to ping host via ssh connection')
+                return not should_succeed
+            return should_succeed
+
+        return tempest.test.call_until_true(ping_remote,
+                                            CONF.compute.ping_timeout,
+                                            1)
 
     def _create_security_group_nova(self, client=None,
                                     namestart='secgroup-smoke-',

@@ -11,6 +11,7 @@
 #    under the License.
 
 import re
+import six
 import time
 
 from tempest.common import ssh
@@ -28,7 +29,7 @@ class RemoteClient():
         network = CONF.compute.network_for_ssh
         ip_version = CONF.compute.ip_version_for_ssh
         ssh_channel_timeout = CONF.compute.ssh_channel_timeout
-        if isinstance(server, basestring):
+        if isinstance(server, six.string_types):
             ip_address = server
         else:
             addresses = server['addresses'][network]
@@ -92,4 +93,19 @@ class RemoteClient():
 
     def get_mac_address(self):
         cmd = "/sbin/ifconfig | awk '/HWaddr/ {print $5}'"
+        return self.ssh_client.exec_command(cmd)
+
+    def get_ip_list(self):
+        cmd = "/bin/ip address"
+        return self.ssh_client.exec_command(cmd)
+
+    def assign_static_ip(self, nic, addr):
+        cmd = "sudo /bin/ip addr add {ip}/{mask} dev {nic}".format(
+            ip=addr, mask=CONF.network.tenant_network_mask_bits,
+            nic=nic
+        )
+        return self.ssh_client.exec_command(cmd)
+
+    def turn_nic_on(self, nic):
+        cmd = "sudo /bin/ip link set {nic} up".format(nic=nic)
         return self.ssh_client.exec_command(cmd)
