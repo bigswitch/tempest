@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+# Copyright 2014 OpenStack Foundation
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,20 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest.api.volume import base
+from tempest.api.database import base
+from tempest import exceptions
 from tempest import test
 
 
-class VolumeHostsAdminTestsJSON(base.BaseVolumeV1AdminTest):
-    _interface = "json"
+class DatabaseFlavorsNegativeTest(base.BaseDatabaseTest):
 
-    @test.attr(type='gate')
-    def test_list_hosts(self):
-        resp, hosts = self.hosts_client.list_hosts()
-        self.assertEqual(200, resp.status)
-        self.assertTrue(len(hosts) >= 2, "No. of hosts are < 2,"
-                        "response of list hosts is: % s" % hosts)
+    @classmethod
+    def setUpClass(cls):
+        super(DatabaseFlavorsNegativeTest, cls).setUpClass()
+        cls.client = cls.database_flavors_client
 
-
-class VolumeHostsAdminTestsXML(VolumeHostsAdminTestsJSON):
-    _interface = 'xml'
+    @test.attr(type=['negative', 'gate'])
+    def test_get_non_existent_db_flavor(self):
+        # flavor details are not returned for non-existent flavors
+        self.assertRaises(exceptions.NotFound,
+                          self.client.get_db_flavor_details, -1)

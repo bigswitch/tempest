@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest.api.volume.base import BaseVolumeV1AdminTest
+from tempest.api.volume import base
 from tempest.common.utils import data_utils
 from tempest import config
 from tempest.openstack.common import log as logging
@@ -23,7 +23,7 @@ CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 
-class VolumesBackupsTest(BaseVolumeV1AdminTest):
+class VolumesBackupsTest(base.BaseVolumeV1AdminTest):
     _interface = "json"
 
     @classmethod
@@ -38,7 +38,8 @@ class VolumesBackupsTest(BaseVolumeV1AdminTest):
         cls.volume = cls.create_volume()
 
     @test.attr(type='smoke')
-    def test_volume_backup_create_get_restore_delete(self):
+    def test_volume_backup_create_get_detailed_list_restore_delete(self):
+        # Create backup
         backup_name = data_utils.rand_name('Backup')
         create_backup = self.backups_adm_client.create_backup
         resp, backup = create_backup(self.volume['id'],
@@ -46,21 +47,31 @@ class VolumesBackupsTest(BaseVolumeV1AdminTest):
         self.assertEqual(202, resp.status)
         self.addCleanup(self.backups_adm_client.delete_backup,
                         backup['id'])
-        self.assertEqual(backup['name'], backup_name)
+        self.assertEqual(backup_name, backup['name'])
         self.volumes_adm_client.wait_for_volume_status(self.volume['id'],
                                                        'available')
         self.backups_adm_client.wait_for_backup_status(backup['id'],
                                                        'available')
 
+        # Get a given backup
         resp, backup = self.backups_adm_client.get_backup(backup['id'])
         self.assertEqual(200, resp.status)
-        self.assertEqual(backup['name'], backup_name)
+        self.assertEqual(backup_name, backup['name'])
 
+        # Get all backups with detail
+        resp, backups = self.backups_adm_client.list_backups_with_detail()
+        self.assertEqual(200, resp.status)
+        self.assertIn((backup['name'], backup['id']),
+                      [(m['name'], m['id']) for m in backups])
+
+        # Restore backup
         resp, restore = self.backups_adm_client.restore_backup(backup['id'])
         self.assertEqual(202, resp.status)
+
+        # Delete backup
         self.addCleanup(self.volumes_adm_client.delete_volume,
                         restore['volume_id'])
-        self.assertEqual(restore['backup_id'], backup['id'])
+        self.assertEqual(backup['id'], restore['backup_id'])
         self.backups_adm_client.wait_for_backup_status(backup['id'],
                                                        'available')
         self.volumes_adm_client.wait_for_volume_status(restore['volume_id'],

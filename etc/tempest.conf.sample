@@ -391,6 +391,20 @@
 #endpoint_type=publicURL
 
 
+[database]
+
+#
+# Options defined in tempest.config
+#
+
+# Catalog type of the Database service. (string value)
+#catalog_type=database
+
+# Valid primary flavor to use in database tests. (string
+# value)
+#db_flavor_ref=1
+
+
 [debug]
 
 #
@@ -548,6 +562,16 @@
 #ssh_user_regex=[["^.*[Cc]irros.*$", "root"]]
 
 
+[negative]
+
+#
+# Options defined in tempest.config
+#
+
+# Test generator class for all negative tests (string value)
+#test_generator=tempest.common.generator.negative_generator.NegativeTestGenerator
+
+
 [network]
 
 #
@@ -574,9 +598,6 @@
 # The mask bits for tenant ipv4 subnets (integer value)
 #tenant_network_mask_bits=28
 
-# Allow the execution of IPv6 tests (boolean value)
-#ipv6_enabled=true
-
 # The cidr block to allocate tenant ipv6 subnets from (string
 # value)
 #tenant_network_v6_cidr=2003::/64
@@ -602,6 +623,9 @@
 #
 # Options defined in tempest.config
 #
+
+# Allow the execution of IPv6 tests (boolean value)
+#ipv6=true
 
 # A list of enabled network extensions with a special entry
 # all which indicates every extension is enabled (list value)
@@ -679,7 +703,7 @@
 
 # Timeout in seconds to wait for a stack to build. (integer
 # value)
-#build_timeout=300
+#build_timeout=600
 
 # Instance type for tests. Needs to be big enough for a full
 # OS plus the test workload (string value)
@@ -772,6 +796,10 @@
 # Whether or not Ironic is expected to be available (boolean
 # value)
 #ironic=false
+
+# Whether or not Trove is expected to be available (boolean
+# value)
+#trove=false
 
 
 [stress]
