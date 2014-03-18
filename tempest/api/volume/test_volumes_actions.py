@@ -25,6 +25,7 @@ class VolumesActionsTest(base.BaseVolumeV1Test):
     _interface = "json"
 
     @classmethod
+    @test.safe_setup
     def setUpClass(cls):
         super(VolumesActionsTest, cls).setUpClass()
         cls.client = cls.volumes_client
@@ -44,7 +45,7 @@ class VolumesActionsTest(base.BaseVolumeV1Test):
     def tearDownClass(cls):
         # Delete the test instance
         cls.servers_client.delete_server(cls.server['id'])
-        cls.client.wait_for_resource_deletion(cls.server['id'])
+        cls.servers_client.wait_for_server_termination(cls.server['id'])
 
         super(VolumesActionsTest, cls).tearDownClass()
 
