@@ -15,7 +15,7 @@
 #    under the License.
 
 import collections
-import hashlib
+import inspect
 import json
 from lxml import etree
 import re
@@ -224,44 +224,80 @@ class RestClient(object):
         versions = map(lambda x: x['id'], body)
         return resp, versions
 
-    def _log_request(self, method, req_url, headers, body):
-        self.LOG.info('Request: ' + method + ' ' + req_url)
-        if headers:
-            print_headers = headers
-            if 'X-Auth-Token' in headers and headers['X-Auth-Token']:
-                token = headers['X-Auth-Token']
-                if len(token) > 64 and TOKEN_CHARS_RE.match(token):
-                    print_headers = headers.copy()
-                    print_headers['X-Auth-Token'] = "<Token omitted>"
-            self.LOG.debug('Request Headers: ' + str(print_headers))
-        if body:
-            str_body = str(body)
-            length = len(str_body)
-            self.LOG.debug('Request Body: ' + str_body[:2048])
-            if length >= 2048:
-                self.LOG.debug("Large body (%d) md5 summary: %s", length,
-                               hashlib.md5(str_body).hexdigest())
+    def _find_caller(self):
+        """Find the caller class and test name.
 
-    def _log_response(self, resp, resp_body):
-        status = resp['status']
-        self.LOG.info("Response Status: " + status)
-        headers = resp.copy()
-        del headers['status']
-        if headers.get('x-compute-request-id'):
-            self.LOG.info("Nova/Cinder request id: %s" %
-                          headers.pop('x-compute-request-id'))
-        elif headers.get('x-openstack-request-id'):
-            self.LOG.info("OpenStack request id %s" %
-                          headers.pop('x-openstack-request-id'))
-        if len(headers):
-            self.LOG.debug('Response Headers: ' + str(headers))
-        if resp_body:
-            str_body = str(resp_body)
-            length = len(str_body)
-            self.LOG.debug('Response Body: ' + str_body[:2048])
-            if length >= 2048:
-                self.LOG.debug("Large body (%d) md5 summary: %s", length,
-                               hashlib.md5(str_body).hexdigest())
+        Because we know that the interesting things that call us are
+        test_* methods, and various kinds of setUp / tearDown, we
+        can look through the call stack to find appropriate methods,
+        and the class we were in when those were called.
+        """
+        caller_name = None
+        names = []
+        frame = inspect.currentframe()
+        is_cleanup = False
+        # Start climbing the ladder until we hit a good method
+        while True:
+            try:
+                frame = frame.f_back
+                name = frame.f_code.co_name
+                names.append(name)
+                if re.search("^(test_|setUp|tearDown)", name):
+                    cname = ""
+                    if 'self' in frame.f_locals:
+                        cname = frame.f_locals['self'].__class__.__name__
+                    if 'cls' in frame.f_locals:
+                        cname = frame.f_locals['cls'].__name__
+                    caller_name = cname + ":" + name
+                    break
+                elif re.search("^_run_cleanup", name):
+                    is_cleanup = True
+                else:
+                    cname = ""
+                    if 'self' in frame.f_locals:
+                        cname = frame.f_locals['self'].__class__.__name__
+                    if 'cls' in frame.f_locals:
+                        cname = frame.f_locals['cls'].__name__
+
+                    # the fact that we are running cleanups is indicated pretty
+                    # deep in the stack, so if we see that we want to just
+                    # start looking for a real class name, and declare victory
+                    # once we do.
+                    if is_cleanup and cname:
+                        if not re.search("^RunTest", cname):
+                            caller_name = cname + ":_run_cleanups"
+                            break
+            except Exception:
+                break
+        # prevents frame leaks
+        del frame
+        if caller_name is None:
+            self.LOG.debug("Sane call name not found in %s" % names)
+        return caller_name
+
+    def _get_request_id(self, resp):
+        for i in ('x-openstack-request-id', 'x-compute-request-id'):
+            if i in resp:
+                return resp[i]
+        return ""
+
+    def _log_request(self, method, req_url, resp, secs=""):
+        # if we have the request id, put it in the right part of the log
+        extra = dict(request_id=self._get_request_id(resp))
+        # NOTE(sdague): while we still have 6 callers to this function
+        # we're going to just provide work around on who is actually
+        # providing timings by gracefully adding no content if they don't.
+        # Once we're down to 1 caller, clean this up.
+        if secs:
+            secs = " %.3fs" % secs
+        self.LOG.info(
+            'Request (%s): %s %s %s%s' % (
+                self._find_caller(),
+                resp['status'],
+                method,
+                req_url,
+                secs),
+            extra=extra)
 
     def _parse_resp(self, body):
         if self._get_type() is "json":
@@ -340,11 +376,13 @@ class RestClient(object):
         # Authenticate the request with the auth provider
         req_url, req_headers, req_body = self.auth_provider.auth_request(
             method, url, headers, body, self.filters)
-        self._log_request(method, req_url, req_headers, req_body)
-        # Do the actual request
+
+        # Do the actual request, and time it
+        start = time.time()
         resp, resp_body = self.http_obj.request(
             req_url, method, headers=req_headers, body=req_body)
-        self._log_response(resp, resp_body)
+        end = time.time()
+        self._log_request(method, req_url, resp, secs=(end - start))
         # Verify HTTP response codes
         self.response_checker(method, url, req_headers, req_body, resp,
                               resp_body)
