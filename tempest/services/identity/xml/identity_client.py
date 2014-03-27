@@ -12,8 +12,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from tempest.common import xml_utils as xml
 from tempest import config
-from tempest.services.compute.xml import common as xml
 from tempest.services.identity.json import identity_client
 
 CONF = config.CONF
@@ -29,6 +29,11 @@ class IdentityClientXML(identity_client.IdentityClientJSON):
         create_role = xml.Element("role", xmlns=XMLNS, name=name)
         resp, body = self.post('OS-KSADM/roles',
                                str(xml.Document(create_role)))
+        return resp, self._parse_resp(body)
+
+    def get_role(self, role_id):
+        """Get a role by its id."""
+        resp, body = self.get('OS-KSADM/roles/%s' % role_id)
         return resp, self._parse_resp(body)
 
     def create_tenant(self, name, **kwargs):

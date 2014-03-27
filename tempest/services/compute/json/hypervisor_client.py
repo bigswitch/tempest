@@ -38,12 +38,16 @@ class HypervisorClientJSON(rest_client.RestClient):
         """Show detailed hypervisors information."""
         resp, body = self.get('os-hypervisors/detail')
         body = json.loads(body)
+        self.validate_response(common_schema.common_list_hypervisors_detail,
+                               resp, body)
         return resp, body['hypervisors']
 
     def get_hypervisor_show_details(self, hyper_id):
         """Display the details of the specified hypervisor."""
         resp, body = self.get('os-hypervisors/%s' % hyper_id)
         body = json.loads(body)
+        self.validate_response(common_schema.common_show_hypervisor,
+                               resp, body)
         return resp, body['hypervisor']
 
     def get_hypervisor_servers(self, hyper_name):
