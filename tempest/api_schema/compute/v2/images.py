@@ -90,3 +90,33 @@ list_images = {
         'required': ['images']
     }
 }
+
+create_image = {
+    'status_code': [202]
+}
+
+delete = {
+    'status_code': [204]
+}
+
+image_metadata = {
+    'status_code': [200],
+    'response_body': {
+        'type': 'object',
+        'properties': {
+            'metadata': {'type': 'object'}
+        },
+        'required': ['metadata']
+    }
+}
+
+image_meta_item = {
+    'status_code': [200],
+    'response_body': {
+        'type': 'object',
+        'properties': {
+            'meta': {'type': 'object'}
+        },
+        'required': ['meta']
+    }
+}

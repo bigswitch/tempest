@@ -48,6 +48,7 @@ class ImagesClientJSON(rest_client.RestClient):
         post_body = json.dumps(post_body)
         resp, body = self.post('servers/%s/action' % str(server_id),
                                post_body)
+        self.validate_response(schema.create_image, resp, body)
         return resp, body
 
     def list_images(self, params=None):
@@ -81,7 +82,9 @@ class ImagesClientJSON(rest_client.RestClient):
 
     def delete_image(self, image_id):
         """Deletes the provided image."""
-        return self.delete("images/%s" % str(image_id))
+        resp, body = self.delete("images/%s" % str(image_id))
+        self.validate_response(schema.delete, resp, body)
+        return resp, body
 
     def wait_for_image_status(self, image_id, status):
         """Waits for an image to reach a given status."""
@@ -91,6 +94,7 @@ class ImagesClientJSON(rest_client.RestClient):
         """Lists all metadata items for an image."""
         resp, body = self.get("images/%s/metadata" % str(image_id))
         body = json.loads(body)
+        self.validate_response(schema.image_metadata, resp, body)
         return resp, body['metadata']
 
     def set_image_metadata(self, image_id, meta):
@@ -98,6 +102,7 @@ class ImagesClientJSON(rest_client.RestClient):
         post_body = json.dumps({'metadata': meta})
         resp, body = self.put('images/%s/metadata' % str(image_id), post_body)
         body = json.loads(body)
+        self.validate_response(schema.image_metadata, resp, body)
         return resp, body['metadata']
 
     def update_image_metadata(self, image_id, meta):
@@ -105,12 +110,14 @@ class ImagesClientJSON(rest_client.RestClient):
         post_body = json.dumps({'metadata': meta})
         resp, body = self.post('images/%s/metadata' % str(image_id), post_body)
         body = json.loads(body)
+        self.validate_response(schema.image_metadata, resp, body)
         return resp, body['metadata']
 
     def get_image_metadata_item(self, image_id, key):
         """Returns the value for a specific image metadata key."""
         resp, body = self.get("images/%s/metadata/%s" % (str(image_id), key))
         body = json.loads(body)
+        self.validate_response(schema.image_meta_item, resp, body)
         return resp, body['meta']
 
     def set_image_metadata_item(self, image_id, key, meta):
@@ -119,12 +126,14 @@ class ImagesClientJSON(rest_client.RestClient):
         resp, body = self.put('images/%s/metadata/%s' % (str(image_id), key),
                               post_body)
         body = json.loads(body)
+        self.validate_response(schema.image_meta_item, resp, body)
         return resp, body['meta']
 
     def delete_image_metadata_item(self, image_id, key):
         """Deletes a single image metadata key/value pair."""
         resp, body = self.delete("images/%s/metadata/%s" %
                                  (str(image_id), key))
+        self.validate_response(schema.delete, resp, body)
         return resp, body
 
     def is_resource_deleted(self, id):
