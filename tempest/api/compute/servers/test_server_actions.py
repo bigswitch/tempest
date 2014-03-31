@@ -29,9 +29,6 @@ CONF = config.CONF
 
 
 class ServerActionsTestJSON(base.BaseV2ComputeTest):
-    resize_available = CONF.compute_feature_enabled.resize
-    pause_available = CONF.compute_feature_enabled.pause
-    suspend_available = CONF.compute_feature_enabled.suspend
     run_ssh = CONF.compute.run_ssh
 
     def setUp(self):
@@ -186,7 +183,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
             if current_flavor == self.flavor_ref else self.flavor_ref
         return current_flavor, new_flavor_ref
 
-    @testtools.skipIf(not resize_available, 'Resize not available.')
+    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
+                          'Resize not available.')
     @test.attr(type='smoke')
     def test_resize_server_confirm(self):
         # The server's RAM and disk space should be modified to that of
@@ -205,7 +203,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         resp, server = self.client.get_server(self.server_id)
         self.assertEqual(new_flavor_ref, server['flavor']['id'])
 
-    @testtools.skipIf(not resize_available, 'Resize not available.')
+    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
+                          'Resize not available.')
     @test.attr(type='gate')
     def test_resize_server_revert(self):
         # The server's RAM and disk space should return to its original
@@ -342,7 +341,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
 
         self.wait_for(self._get_output)
 
-    @testtools.skipIf(not pause_available, 'Pause is not available.')
+    @testtools.skipUnless(CONF.compute_feature_enabled.pause,
+                          'Pause is not available.')
     @test.attr(type='gate')
     def test_pause_unpause_server(self):
         resp, server = self.client.pause_server(self.server_id)
@@ -352,7 +352,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         self.assertEqual(202, resp.status)
         self.client.wait_for_server_status(self.server_id, 'ACTIVE')
 
-    @testtools.skipIf(not suspend_available, 'Suspend is not available.')
+    @testtools.skipUnless(CONF.compute_feature_enabled.suspend,
+                          'Suspend is not available.')
     @test.attr(type='gate')
     def test_suspend_resume_server(self):
         resp, server = self.client.suspend_server(self.server_id)
