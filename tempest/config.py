@@ -126,7 +126,7 @@ ComputeGroup = [
                      "OpenStack Identity API admin credentials are known."),
     cfg.StrOpt('image_ref',
                default="{$IMAGE_ID}",
-               help="Valid secondary image reference to be used in tests."),
+               help="Valid primary image reference to be used in tests."),
     cfg.StrOpt('image_ref_alt',
                default="{$IMAGE_ID_ALT}",
                help="Valid secondary image reference to be used in tests."),
@@ -441,6 +441,9 @@ VolumeGroup = [
     cfg.StrOpt('disk_format',
                default='raw',
                help='Disk format to use when copying a volume to image'),
+    cfg.IntOpt('volume_size',
+               default=1,
+               help='Default size in GB for volumes created by volumes tests'),
 ]
 
 volume_feature_group = cfg.OptGroup(name='volume-feature-enabled',
@@ -844,13 +847,29 @@ baremetal_group = cfg.OptGroup(name='baremetal',
 BaremetalGroup = [
     cfg.StrOpt('catalog_type',
                default='baremetal',
-               help="Catalog type of the baremetal provisioning service."),
+               help="Catalog type of the baremetal provisioning service"),
+    cfg.BoolOpt('driver_enabled',
+                default=False,
+                help="Whether the Ironic nova-compute driver is enabled"),
     cfg.StrOpt('endpoint_type',
                default='publicURL',
                choices=['public', 'admin', 'internal',
                         'publicURL', 'adminURL', 'internalURL'],
                help="The endpoint type to use for the baremetal provisioning "
-                    "service."),
+                    "service"),
+    cfg.IntOpt('active_timeout',
+               default=300,
+               help="Timeout for Ironic node to completely provision"),
+    cfg.IntOpt('association_timeout',
+               default=10,
+               help="Timeout for association of Nova instance and Ironic "
+                    "node"),
+    cfg.IntOpt('power_timeout',
+               default=20,
+               help="Timeout for Ironic power transitions."),
+    cfg.IntOpt('unprovision_timeout',
+               default=20,
+               help="Timeout for unprovisioning an Ironic node.")
 ]
 
 cli_group = cfg.OptGroup(name='cli', title="cli Configuration Options")
