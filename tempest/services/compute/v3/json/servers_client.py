@@ -136,7 +136,9 @@ class ServersV3ClientJSON(rest_client.RestClient):
 
     def delete_server(self, server_id):
         """Deletes the given server."""
-        return self.delete("servers/%s" % str(server_id))
+        resp, body = self.delete("servers/%s" % str(server_id))
+        self.validate_response(common_schema.delete_server, resp, body)
+        return resp, body
 
     def list_servers(self, params=None):
         """Lists all servers for a user."""
@@ -326,12 +328,17 @@ class ServersV3ClientJSON(rest_client.RestClient):
 
     def attach_volume(self, server_id, volume_id, device='/dev/vdz'):
         """Attaches a volume to a server instance."""
-        return self.action(server_id, 'attach', None, volume_id=volume_id,
-                           device=device)
+        resp, body = self.action(server_id, 'attach', None,
+                                 volume_id=volume_id, device=device)
+        self.validate_response(schema.attach_detach_volume, resp, body)
+        return resp, body
 
     def detach_volume(self, server_id, volume_id):
         """Detaches a volume from a server instance."""
-        return self.action(server_id, 'detach', None, volume_id=volume_id)
+        resp, body = self.action(server_id, 'detach', None,
+                                 volume_id=volume_id)
+        self.validate_response(schema.attach_detach_volume, resp, body)
+        return resp, body
 
     def live_migrate_server(self, server_id, dest_host, use_block_migration):
         """This should be called with administrator privileges ."""
