@@ -26,6 +26,16 @@ CONF = config.CONF
 class PortsTestJSON(base.BaseNetworkTest):
     _interface = 'json'
 
+    """
+    Test the following operations for ports:
+
+        port create
+        port delete
+        port list
+        port show
+        port update
+    """
+
     @classmethod
     @test.safe_setup
     def setUpClass(cls):
@@ -80,17 +90,18 @@ class PortsTestJSON(base.BaseNetworkTest):
         self.assertEqual(self.port['network_id'], port['network_id'])
         self.assertEqual(self.port['security_groups'],
                          port['security_groups'])
+        self.assertEqual(port['fixed_ips'], [])
 
     @test.attr(type='smoke')
     def test_show_port_fields(self):
         # Verify specific fields of a port
-        field_list = [('fields', 'id'), ]
+        fields = ['id', 'mac_address']
         resp, body = self.client.show_port(self.port['id'],
-                                           field_list=field_list)
+                                           fields=fields)
         self.assertEqual('200', resp['status'])
         port = body['port']
-        self.assertEqual(len(port), len(field_list))
-        for label, field_name in field_list:
+        self.assertEqual(sorted(port.keys()), sorted(fields))
+        for field_name in fields:
             self.assertEqual(port[field_name], self.port[field_name])
 
     @test.attr(type='smoke')
@@ -126,14 +137,14 @@ class PortsTestJSON(base.BaseNetworkTest):
     @test.attr(type='smoke')
     def test_list_ports_fields(self):
         # Verify specific fields of ports
-        resp, body = self.client.list_ports(fields='id')
+        fields = ['id', 'mac_address']
+        resp, body = self.client.list_ports(fields=fields)
         self.assertEqual('200', resp['status'])
         ports = body['ports']
         self.assertNotEmpty(ports, "Port list returned is empty")
         # Asserting the fields returned are correct
         for port in ports:
-            self.assertEqual(len(port), 1)
-            self.assertIn('id', port)
+            self.assertEqual(sorted(fields), sorted(port.keys()))
 
 
 class PortsTestXML(PortsTestJSON):

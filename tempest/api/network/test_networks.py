@@ -37,15 +37,9 @@ class NetworksTestJSON(base.BaseNetworkTest):
         create a subnet for a tenant
         list tenant's subnets
         show a tenant subnet details
-        port create
-        port delete
-        port list
-        port show
-        port update
         network update
         subnet update
         delete a network also deletes its subnets
-        create a port with no IP address associated with it
 
         All subnet tests are run once with ipv4 and once with ipv6.
 
@@ -115,13 +109,13 @@ class NetworksTestJSON(base.BaseNetworkTest):
     @test.attr(type='smoke')
     def test_show_network_fields(self):
         # Verify specific fields of a network
-        field_list = [('fields', 'id'), ('fields', 'name'), ]
+        fields = ['id', 'name']
         resp, body = self.client.show_network(self.network['id'],
-                                              field_list=field_list)
+                                              fields=fields)
         self.assertEqual('200', resp['status'])
         network = body['network']
-        self.assertEqual(len(network), len(field_list))
-        for label, field_name in field_list:
+        self.assertEqual(sorted(network.keys()), sorted(fields))
+        for field_name in fields:
             self.assertEqual(network[field_name], self.network[field_name])
 
     @test.attr(type='smoke')
@@ -136,13 +130,13 @@ class NetworksTestJSON(base.BaseNetworkTest):
     @test.attr(type='smoke')
     def test_list_networks_fields(self):
         # Verify specific fields of the networks
-        resp, body = self.client.list_networks(fields='id')
+        fields = ['id', 'name']
+        resp, body = self.client.list_networks(fields=fields)
         self.assertEqual('200', resp['status'])
         networks = body['networks']
         self.assertNotEmpty(networks, "Network list returned is empty")
         for network in networks:
-            self.assertEqual(len(network), 1)
-            self.assertIn('id', network)
+            self.assertEqual(sorted(network.keys()), sorted(fields))
 
     @test.attr(type='smoke')
     def test_show_subnet(self):
@@ -158,13 +152,13 @@ class NetworksTestJSON(base.BaseNetworkTest):
     @test.attr(type='smoke')
     def test_show_subnet_fields(self):
         # Verify specific fields of a subnet
-        field_list = [('fields', 'id'), ('fields', 'cidr'), ]
+        fields = ['id', 'network_id']
         resp, body = self.client.show_subnet(self.subnet['id'],
-                                             field_list=field_list)
+                                             fields=fields)
         self.assertEqual('200', resp['status'])
         subnet = body['subnet']
-        self.assertEqual(len(subnet), len(field_list))
-        for label, field_name in field_list:
+        self.assertEqual(sorted(subnet.keys()), sorted(fields))
+        for field_name in fields:
             self.assertEqual(subnet[field_name], self.subnet[field_name])
 
     @test.attr(type='smoke')
@@ -179,13 +173,13 @@ class NetworksTestJSON(base.BaseNetworkTest):
     @test.attr(type='smoke')
     def test_list_subnets_fields(self):
         # Verify specific fields of subnets
-        resp, body = self.client.list_subnets(fields='id')
+        fields = ['id', 'network_id']
+        resp, body = self.client.list_subnets(fields=fields)
         self.assertEqual('200', resp['status'])
         subnets = body['subnets']
         self.assertNotEmpty(subnets, "Subnet list returned is empty")
         for subnet in subnets:
-            self.assertEqual(len(subnet), 1)
-            self.assertIn('id', subnet)
+            self.assertEqual(sorted(subnet.keys()), sorted(fields))
 
     def _try_delete_network(self, net_id):
         # delete network, if it exists
@@ -221,32 +215,6 @@ class NetworksTestJSON(base.BaseNetworkTest):
         # is actually deleted here - this will create and issue, hence remove
         # it from the list.
         self.subnets.pop()
-
-    @test.attr(type='smoke')
-    def test_create_port_with_no_ip(self):
-        # For this test create a new network - do not use any previously
-        # created networks.
-        name = data_utils.rand_name('network-nosubnet-')
-        resp, body = self.client.create_network(name=name)
-        self.assertEqual('201', resp['status'])
-        network = body['network']
-        net_id = network['id']
-        self.networks.append(network)
-
-        # Now create a port for this network - without creating any
-        # subnets for this network - this ensures no IP for the port
-        resp, body = self.client.create_port(network_id=net_id)
-        self.assertEqual('201', resp['status'])
-        port = body['port']
-        port_id = port['id']
-        self.addCleanup(self.client.delete_port, port_id)
-
-        # Verify that the port does not have any IP address
-        resp, body = self.client.show_port(port_id)
-        self.assertEqual('200', resp['status'])
-        port_resp = body['port']
-        self.assertEqual(port_id, port_resp['id'])
-        self.assertEqual(port_resp['fixed_ips'], [])
 
 
 class NetworksTestXML(NetworksTestJSON):
