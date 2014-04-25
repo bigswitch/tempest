@@ -276,6 +276,7 @@ class ServersClientJSON(rest_client.RestClient):
     def list_server_metadata(self, server_id):
         resp, body = self.get("servers/%s/metadata" % str(server_id))
         body = json.loads(body)
+        self.validate_response(common_schema.list_server_metadata, resp, body)
         return resp, body['metadata']
 
     def set_server_metadata(self, server_id, meta, no_metadata_field=False):
@@ -286,6 +287,7 @@ class ServersClientJSON(rest_client.RestClient):
         resp, body = self.put('servers/%s/metadata' % str(server_id),
                               post_body)
         body = json.loads(body)
+        self.validate_response(common_schema.set_server_metadata, resp, body)
         return resp, body['metadata']
 
     def update_server_metadata(self, server_id, meta):

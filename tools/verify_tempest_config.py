@@ -44,10 +44,11 @@ def _get_api_versions(os, service):
     client_dict = {
         'nova': os.servers_client,
         'keystone': os.identity_client,
+        'cinder': os.volumes_client,
     }
     client_dict[service].skip_path()
-    endpoint_parts = urlparse.urlparse(client_dict[service])
-    endpoint = endpoint_parts.scheme + '//' + endpoint_parts.netloc
+    endpoint_parts = urlparse.urlparse(client_dict[service].base_url)
+    endpoint = endpoint_parts.scheme + '://' + endpoint_parts.netloc
     __, body = RAW_HTTP.request(endpoint, 'GET')
     client_dict[service].reset_path()
     body = json.loads(body)
@@ -74,6 +75,17 @@ def verify_nova_api_versions(os):
     if CONF.compute_feature_enabled.api_v3 != ('v3.0' in versions):
         print('Config option compute api_v3 should be change to: %s' % (
               not CONF.compute_feature_enabled.api_v3))
+
+
+def verify_cinder_api_versions(os):
+    # Check cinder api versions
+    versions = _get_api_versions(os, 'cinder')
+    if CONF.volume_feature_enabled.api_v1 != ('v1.0' in versions):
+        print('Config option volume api_v2 should be change to: %s' % (
+              not CONF.volume_feature_enabled.api_v1))
+    if CONF.volume_feature_enabled.api_v2 != ('v2.0' in versions):
+        print('Config option volume api_v2 should be change to: %s' % (
+              not CONF.volume_feature_enabled.api_v2))
 
 
 def get_extension_client(os, service):
@@ -169,10 +181,11 @@ def check_service_availability(os):
         'orchestration': 'heat',
         'metering': 'ceilometer',
         'telemetry': 'ceilometer',
-        'data_processing': 'savanna',
+        'data_processing': 'sahara',
         'baremetal': 'ironic',
-        'identity': 'keystone'
-
+        'identity': 'keystone',
+        'queuing': 'marconi',
+        'database': 'trove'
     }
     # Get catalog list for endpoints to use for validation
     __, endpoints = os.endpoints_client.list_endpoints()
@@ -219,6 +232,7 @@ def main(argv):
     verify_keystone_api_versions(os)
     verify_glance_api_versions(os)
     verify_nova_api_versions(os)
+    verify_cinder_api_versions(os)
     display_results(results)
 
 

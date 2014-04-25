@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 get_password = {
     'status_code': [200],
     'response_body': {
@@ -47,3 +49,16 @@ get_vnc_console = {
 delete_server = {
     'status_code': [204],
 }
+
+set_server_metadata = {
+    'status_code': [200],
+    'response_body': {
+        'type': 'object',
+        'properties': {
+            'metadata': {'type': 'object'}
+        },
+        'required': ['metadata']
+    }
+}
+
+list_server_metadata = copy.deepcopy(set_server_metadata)
