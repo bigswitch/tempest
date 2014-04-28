@@ -1,5 +1,4 @@
-# Copyright 2014 Hewlett-Packard Development Company, L.P.
-# All Rights Reserved.
+# Copyright 2014 NEC Corporation.  All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,14 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest.tests import fake_credentials
+import copy
 
+from tempest.api_schema.compute import certificates
 
-def get_credentials(credential_type=None, fill_in=True, **kwargs):
-    return fake_credentials.FakeCredentials()
-
-
-class FakeAuthProvider(object):
-
-    def auth_request(self, method, url, headers=None, body=None, filters=None):
-        return url, headers, body
+create_certificate = copy.deepcopy(certificates._common_schema)
+create_certificate['status_code'] = [201]

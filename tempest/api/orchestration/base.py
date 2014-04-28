@@ -41,6 +41,7 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
         cls.servers_client = cls.os.servers_client
         cls.keypairs_client = cls.os.keypairs_client
         cls.network_client = cls.os.network_client
+        cls.volumes_client = cls.os.volumes_client
         cls.stacks = []
         cls.keypairs = []
 
@@ -136,3 +137,8 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
 
         return dict((r['resource_name'], r['resource_type'])
                     for r in resources)
+
+    def get_stack_output(self, stack_identifier, output_key):
+        resp, body = self.client.get_stack(stack_identifier)
+        self.assertEqual('200', resp['status'])
+        return self.stack_output(body, output_key)
