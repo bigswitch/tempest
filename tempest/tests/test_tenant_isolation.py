@@ -17,6 +17,7 @@ from mock import patch
 import neutronclient.v2_0.client as neutronclient
 from oslo.config import cfg
 
+from tempest.common import http
 from tempest.common import isolated_creds
 from tempest import config
 from tempest import exceptions
@@ -27,6 +28,8 @@ from tempest.services.network.json import network_client as json_network_client
 from tempest.services.network.xml import network_client as xml_network_client
 from tempest.tests import base
 from tempest.tests import fake_config
+from tempest.tests import fake_http
+from tempest.tests import fake_identity
 
 
 class TestTenantIsolation(base.TestCase):
@@ -35,6 +38,9 @@ class TestTenantIsolation(base.TestCase):
         super(TestTenantIsolation, self).setUp()
         self.useFixture(fake_config.ConfigFixture())
         self.stubs.Set(config, 'TempestConfigPrivate', fake_config.FakePrivate)
+        self.fake_http = fake_http.fake_httplib2(return_type=200)
+        self.stubs.Set(http.ClosingHttp, 'request',
+                       fake_identity._fake_v2_response)
 
     def test_tempest_client(self):
         iso_creds = isolated_creds.IsolatedCreds('test class')
@@ -108,9 +114,9 @@ class TestTenantIsolation(base.TestCase):
                                                  password='fake_password')
         self._mock_tenant_create('1234', 'fake_prim_tenant')
         self._mock_user_create('1234', 'fake_prim_user')
-        username, tenant_name, password = iso_creds.get_primary_creds()
-        self.assertEqual(username, 'fake_prim_user')
-        self.assertEqual(tenant_name, 'fake_prim_tenant')
+        primary_creds = iso_creds.get_primary_creds(old_style=False)
+        self.assertEqual(primary_creds.username, 'fake_prim_user')
+        self.assertEqual(primary_creds.tenant_name, 'fake_prim_tenant')
         # Verify helper methods
         tenant = iso_creds.get_primary_tenant()
         user = iso_creds.get_primary_user()
@@ -136,10 +142,10 @@ class TestTenantIsolation(base.TestCase):
         self.addCleanup(user_mock.stop)
         with patch.object(json_iden_client.IdentityClientJSON,
                           'assign_user_role') as user_mock:
-            username, tenant_name, password = iso_creds.get_admin_creds()
+            admin_creds = iso_creds.get_admin_creds(old_style=False)
         user_mock.assert_called_once_with('1234', '1234', '1234')
-        self.assertEqual(username, 'fake_admin_user')
-        self.assertEqual(tenant_name, 'fake_admin_tenant')
+        self.assertEqual(admin_creds.username, 'fake_admin_user')
+        self.assertEqual(admin_creds.tenant_name, 'fake_admin_tenant')
         # Verify helper methods
         tenant = iso_creds.get_admin_tenant()
         user = iso_creds.get_admin_user()
@@ -153,12 +159,12 @@ class TestTenantIsolation(base.TestCase):
                                                  password='fake_password')
         tenant_fix = self._mock_tenant_create('1234', 'fake_prim_tenant')
         user_fix = self._mock_user_create('1234', 'fake_prim_user')
-        username, tenant_name, password = iso_creds.get_primary_creds()
+        iso_creds.get_primary_creds(old_style=False)
         tenant_fix.cleanUp()
         user_fix.cleanUp()
         tenant_fix = self._mock_tenant_create('12345', 'fake_alt_tenant')
         user_fix = self._mock_user_create('12345', 'fake_alt_user')
-        alt_username, alt_tenant, alt_password = iso_creds.get_alt_creds()
+        iso_creds.get_alt_creds(old_style=False)
         tenant_fix.cleanUp()
         user_fix.cleanUp()
         tenant_fix = self._mock_tenant_create('123456', 'fake_admin_tenant')
@@ -170,8 +176,7 @@ class TestTenantIsolation(base.TestCase):
                           [{'id': '123456', 'name': 'admin'}])))
         with patch.object(json_iden_client.IdentityClientJSON,
                           'assign_user_role'):
-            admin_username, admin_tenant, admin_pass = \
-                iso_creds.get_admin_creds()
+            iso_creds.get_admin_creds(old_style=False)
         user_mock = self.patch(
             'tempest.services.identity.json.identity_client.'
             'IdentityClientJSON.delete_user')
@@ -201,9 +206,9 @@ class TestTenantIsolation(base.TestCase):
                                                  password='fake_password')
         self._mock_user_create('1234', 'fake_alt_user')
         self._mock_tenant_create('1234', 'fake_alt_tenant')
-        username, tenant_name, password = iso_creds.get_alt_creds()
-        self.assertEqual(username, 'fake_alt_user')
-        self.assertEqual(tenant_name, 'fake_alt_tenant')
+        alt_creds = iso_creds.get_alt_creds(old_style=False)
+        self.assertEqual(alt_creds.username, 'fake_alt_user')
+        self.assertEqual(alt_creds.tenant_name, 'fake_alt_tenant')
         # Verify helper methods
         tenant = iso_creds.get_alt_tenant()
         user = iso_creds.get_alt_user()
@@ -222,7 +227,7 @@ class TestTenantIsolation(base.TestCase):
         router_interface_mock = self.patch(
             'tempest.services.network.json.network_client.NetworkClientJSON.'
             'add_router_interface_with_subnet_id')
-        username, tenant_name, password = iso_creds.get_primary_creds()
+        iso_creds.get_primary_creds(old_style=False)
         router_interface_mock.called_once_with('1234', '1234')
         network = iso_creds.get_primary_network()
         subnet = iso_creds.get_primary_subnet()
@@ -247,7 +252,7 @@ class TestTenantIsolation(base.TestCase):
         router_interface_mock = self.patch(
             'tempest.services.network.json.network_client.NetworkClientJSON.'
             'add_router_interface_with_subnet_id')
-        username, tenant_name, password = iso_creds.get_primary_creds()
+        iso_creds.get_primary_creds(old_style=False)
         router_interface_mock.called_once_with('1234', '1234')
         router_interface_mock.reset_mock()
         tenant_fix.cleanUp()
@@ -262,7 +267,7 @@ class TestTenantIsolation(base.TestCase):
         subnet_fix = self._mock_subnet_create(iso_creds, '12345',
                                               'fake_alt_subnet')
         router_fix = self._mock_router_create('12345', 'fake_alt_router')
-        alt_username, alt_tenant_name, password = iso_creds.get_alt_creds()
+        iso_creds.get_alt_creds(old_style=False)
         router_interface_mock.called_once_with('12345', '12345')
         router_interface_mock.reset_mock()
         tenant_fix.cleanUp()
@@ -285,7 +290,7 @@ class TestTenantIsolation(base.TestCase):
                           [{'id': '123456', 'name': 'admin'}])))
         with patch.object(json_iden_client.IdentityClientJSON,
                           'assign_user_role'):
-            admin_user, admin_tenant, password = iso_creds.get_admin_creds()
+            iso_creds.get_admin_creds(old_style=False)
         self.patch('tempest.services.identity.json.identity_client.'
                    'IdentityClientJSON.delete_user')
         self.patch('tempest.services.identity.json.identity_client.'
