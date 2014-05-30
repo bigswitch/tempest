@@ -211,13 +211,14 @@
 # admin credentials are known. (boolean value)
 #allow_tenant_isolation=false
 
-# Valid primary image reference to be used in tests. (string
-# value)
-#image_ref={$IMAGE_ID}
+# Valid primary image reference to be used in tests. This is a
+# required option (string value)
+#image_ref=<None>
 
-# Valid secondary image reference to be used in tests. (string
-# value)
-#image_ref_alt={$IMAGE_ID_ALT}
+# Valid secondary image reference to be used in tests. This is
+# a required option, but if only one image is available
+# duplicate the value of image_ref above (string value)
+#image_ref_alt=<None>
 
 # Valid primary flavor to use in tests. (string value)
 #flavor_ref=1
@@ -241,7 +242,7 @@
 #image_alt_ssh_password=password
 
 # Time in seconds between build status checks. (integer value)
-#build_interval=10
+#build_interval=1
 
 # Timeout in seconds to wait for an instance to build.
 # (integer value)
@@ -331,6 +332,9 @@
 # execution, but also requires that OpenStack Identity API
 # admin credentials are known. (boolean value)
 #allow_tenant_isolation=false
+
+# Time in seconds between build status checks. (integer value)
+#build_interval=1
 
 
 [compute-admin]
@@ -705,7 +709,7 @@
 
 # Time in seconds between network operation status checks.
 # (integer value)
-#build_interval=10
+#build_interval=1
 
 
 [network-feature-enabled]
@@ -788,9 +792,6 @@
 # (string value)
 #endpoint_type=publicURL
 
-# Time in seconds between build status checks. (integer value)
-#build_interval=1
-
 # Timeout in seconds to wait for a stack to build. (integer
 # value)
 #build_timeout=1200
@@ -824,6 +825,10 @@
 
 # Catalog type of the Queuing service. (string value)
 #catalog_type=queuing
+
+# The maximum number of queue records per page when listing
+# queues (integer value)
+#max_queues_per_page=20
 
 
 [scenario]
@@ -980,7 +985,7 @@
 
 # Time in seconds between volume availability checks. (integer
 # value)
-#build_interval=10
+#build_interval=1
 
 # Timeout in seconds to wait for a volume to becomeavailable.
 # (integer value)

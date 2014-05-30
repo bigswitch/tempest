@@ -137,11 +137,12 @@ ComputeGroup = [
                      "better parallel execution, but also requires that "
                      "OpenStack Identity API admin credentials are known."),
     cfg.StrOpt('image_ref',
-               default="{$IMAGE_ID}",
-               help="Valid primary image reference to be used in tests."),
+               help="Valid primary image reference to be used in tests. "
+                    "This is a required option"),
     cfg.StrOpt('image_ref_alt',
-               default="{$IMAGE_ID_ALT}",
-               help="Valid secondary image reference to be used in tests."),
+               help="Valid secondary image reference to be used in tests. "
+                    "This is a required option, but if only one image is "
+                    "available duplicate the value of image_ref above"),
     cfg.StrOpt('flavor_ref',
                default="1",
                help="Valid primary flavor to use in tests."),
@@ -163,7 +164,7 @@ ComputeGroup = [
                help="Password used to authenticate to an instance using "
                     "the alternate image."),
     cfg.IntOpt('build_interval',
-               default=10,
+               default=1,
                help="Time in seconds between build status checks."),
     cfg.IntOpt('build_timeout',
                default=300,
@@ -411,7 +412,7 @@ NetworkGroup = [
                help="Timeout in seconds to wait for network operation to "
                     "complete."),
     cfg.IntOpt('build_interval',
-               default=10,
+               default=1,
                help="Time in seconds between network operation status "
                     "checks."),
 ]
@@ -436,6 +437,10 @@ QueuingGroup = [
     cfg.StrOpt('catalog_type',
                default='queuing',
                help='Catalog type of the Queuing service.'),
+    cfg.IntOpt('max_queues_per_page',
+               default=20,
+               help='The maximum number of queue records per page when '
+                    'listing queues'),
 ]
 
 volume_group = cfg.OptGroup(name='volume',
@@ -443,7 +448,7 @@ volume_group = cfg.OptGroup(name='volume',
 
 VolumeGroup = [
     cfg.IntOpt('build_interval',
-               default=10,
+               default=1,
                help='Time in seconds between volume availability checks.'),
     cfg.IntOpt('build_timeout',
                default=300,
