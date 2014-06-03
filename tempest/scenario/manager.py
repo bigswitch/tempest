@@ -285,7 +285,6 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         for ruleset in rulesets:
             sg_rule = client.security_group_rules.create(secgroup_id,
                                                          **ruleset)
-            self.set_resource(sg_rule.id, sg_rule)
             rules.append(sg_rule)
         return rules
 
@@ -411,7 +410,7 @@ class OfficialClientTest(tempest.test.BaseTestCase):
             'name': name,
             'container_format': fmt,
             'disk_format': fmt,
-            'is_public': 'True',
+            'is_public': 'False',
         }
         params.update(properties)
         image = self.image_client.images.create(**params)
@@ -923,7 +922,6 @@ class NetworkScenarioTest(OfficialClientTest):
             client=client,
             **sg_rule['security_group_rule']
         )
-        self.set_resource(sg_rule.id, sg_rule)
         self.assertEqual(secgroup.tenant_id, sg_rule.tenant_id)
         self.assertEqual(secgroup.id, sg_rule.security_group_id)
 
