@@ -29,6 +29,7 @@ from novaclient import exceptions as nova_exceptions
 from tempest.api.network import common as net_common
 from tempest import auth
 from tempest import clients
+from tempest.common import debug
 from tempest.common import isolated_creds
 from tempest.common.utils import data_utils
 from tempest.common.utils.linux import remote_client
@@ -446,6 +447,30 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         LOG.debug("image:%s" % self.image)
 
 
+# power/provision states as of icehouse
+class BaremetalPowerStates(object):
+    """Possible power states of an Ironic node."""
+    POWER_ON = 'power on'
+    POWER_OFF = 'power off'
+    REBOOT = 'rebooting'
+    SUSPEND = 'suspended'
+
+
+class BaremetalProvisionStates(object):
+    """Possible provision states of an Ironic node."""
+    NOSTATE = None
+    INIT = 'initializing'
+    ACTIVE = 'active'
+    BUILDING = 'building'
+    DEPLOYWAIT = 'wait call-back'
+    DEPLOYING = 'deploying'
+    DEPLOYFAIL = 'deploy failed'
+    DEPLOYDONE = 'deploy complete'
+    DELETING = 'deleting'
+    DELETED = 'deleted'
+    ERROR = 'error'
+
+
 class BaremetalScenarioTest(OfficialClientTest):
     @classmethod
     def setUpClass(cls):
@@ -520,6 +545,55 @@ class BaremetalScenarioTest(OfficialClientTest):
         for port in self.baremetal_client.node.list_ports(node_id):
             ports.append(self.baremetal_client.port.get(port.uuid))
         return ports
+
+    def add_keypair(self):
+        self.keypair = self.create_keypair()
+
+    def verify_connectivity(self, ip=None):
+        if ip:
+            dest = self.get_remote_client(ip)
+        else:
+            dest = self.get_remote_client(self.instance)
+        dest.validate_authentication()
+
+    def boot_instance(self):
+        create_kwargs = {
+            'key_name': self.keypair.id
+        }
+        self.instance = self.create_server(
+            wait=False, create_kwargs=create_kwargs)
+
+        self.set_resource('instance', self.instance)
+
+        self.wait_node(self.instance.id)
+        self.node = self.get_node(instance_id=self.instance.id)
+
+        self.wait_power_state(self.node.uuid, BaremetalPowerStates.POWER_ON)
+
+        self.wait_provisioning_state(
+            self.node.uuid,
+            [BaremetalProvisionStates.DEPLOYWAIT,
+             BaremetalProvisionStates.ACTIVE],
+            timeout=15)
+
+        self.wait_provisioning_state(self.node.uuid,
+                                     BaremetalProvisionStates.ACTIVE,
+                                     timeout=CONF.baremetal.active_timeout)
+
+        self.status_timeout(
+            self.compute_client.servers, self.instance.id, 'ACTIVE')
+
+        self.node = self.get_node(instance_id=self.instance.id)
+        self.instance = self.compute_client.servers.get(self.instance.id)
+
+    def terminate_instance(self):
+        self.instance.delete()
+        self.remove_resource('instance')
+        self.wait_power_state(self.node.uuid, BaremetalPowerStates.POWER_OFF)
+        self.wait_provisioning_state(
+            self.node.uuid,
+            BaremetalProvisionStates.NOSTATE,
+            timeout=CONF.baremetal.unprovision_timeout)
 
 
 class NetworkScenarioTest(OfficialClientTest):
@@ -780,6 +854,51 @@ class NetworkScenarioTest(OfficialClientTest):
             linux_client = self.get_remote_client(ip_address, username,
                                                   private_key)
             linux_client.validate_authentication()
+
+    def _check_public_network_connectivity(self, ip_address, username,
+                                           private_key, should_connect=True,
+                                           msg=None, servers=None):
+        # The target login is assumed to have been configured for
+        # key-based authentication by cloud-init.
+        LOG.debug('checking network connections to IP %s with user: %s' %
+                  (ip_address, username))
+        try:
+            self._check_vm_connectivity(ip_address,
+                                        username,
+                                        private_key,
+                                        should_connect=should_connect)
+        except Exception:
+            ex_msg = 'Public network connectivity check failed'
+            if msg:
+                ex_msg += ": " + msg
+            LOG.exception(ex_msg)
+            self._log_console_output(servers)
+            debug.log_net_debug()
+            raise
+
+    def _check_tenant_network_connectivity(self, server,
+                                           username,
+                                           private_key,
+                                           should_connect=True,
+                                           servers_for_debug=None):
+        if not CONF.network.tenant_networks_reachable:
+            msg = 'Tenant networks not configured to be reachable.'
+            LOG.info(msg)
+            return
+        # The target login is assumed to have been configured for
+        # key-based authentication by cloud-init.
+        try:
+            for net_name, ip_addresses in server.networks.iteritems():
+                for ip_address in ip_addresses:
+                    self._check_vm_connectivity(ip_address,
+                                                username,
+                                                private_key,
+                                                should_connect=should_connect)
+        except Exception:
+            LOG.exception('Tenant network connectivity check failed')
+            self._log_console_output(servers_for_debug)
+            debug.log_net_debug()
+            raise
 
     def _check_remote_connectivity(self, source, dest, should_succeed=True):
         """
