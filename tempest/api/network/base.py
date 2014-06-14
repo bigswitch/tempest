@@ -82,9 +82,13 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         cls.metering_label_rules = []
         cls.fw_rules = []
         cls.fw_policies = []
+        cls.ipsecpolicies = []
 
     @classmethod
     def tearDownClass(cls):
+        # Clean up ipsec policies
+        for ipsecpolicy in cls.ipsecpolicies:
+            cls.client.delete_ipsecpolicy(ipsecpolicy['id'])
         # Clean up firewall policies
         for fw_policy in cls.fw_policies:
             cls.client.delete_firewall_policy(fw_policy['id'])
@@ -151,15 +155,16 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
         return network
 
     @classmethod
-    def create_subnet(cls, network, gateway=None):
+    def create_subnet(cls, network, gateway=None, cidr=None, mask_bits=None):
         """Wrapper utility that returns a test subnet."""
         # The cidr and mask_bits depend on the ip version.
         if cls._ip_version == 4:
-            cidr = netaddr.IPNetwork(CONF.network.tenant_network_cidr)
-            mask_bits = CONF.network.tenant_network_mask_bits
+            cidr = cidr or netaddr.IPNetwork(CONF.network.tenant_network_cidr)
+            mask_bits = mask_bits or CONF.network.tenant_network_mask_bits
         elif cls._ip_version == 6:
-            cidr = netaddr.IPNetwork(CONF.network.tenant_network_v6_cidr)
-            mask_bits = CONF.network.tenant_network_v6_mask_bits
+            cidr = (
+                cidr or netaddr.IPNetwork(CONF.network.tenant_network_v6_cidr))
+            mask_bits = mask_bits or CONF.network.tenant_network_v6_mask_bits
         # Find a cidr that is not in use yet and create a subnet with it
         for subnet_cidr in cidr.subnet(mask_bits):
             if not gateway:
@@ -347,6 +352,14 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
             cls.client.remove_router_interface_with_subnet_id(
                 router['id'], i['fixed_ips'][0]['subnet_id'])
         cls.client.delete_router(router['id'])
+
+    @classmethod
+    def create_ipsecpolicy(cls, name):
+        """Wrapper utility that returns a test ipsec policy."""
+        _, body = cls.client.create_ipsecpolicy(name=name)
+        ipsecpolicy = body['ipsecpolicy']
+        cls.ipsecpolicies.append(ipsecpolicy)
+        return ipsecpolicy
 
 
 class BaseAdminNetworkTest(BaseNetworkTest):
