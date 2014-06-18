@@ -247,7 +247,11 @@ ComputeGroup = [
                     'for removing from a host.  -1 never offload, 0 offload '
                     'when shelved. This time should be the same as the time '
                     'of nova.conf, and some tests will run for as long as the '
-                    'time.')
+                    'time.'),
+    cfg.StrOpt('floating_ip_range',
+               default='10.0.0.0/29',
+               help='Unallocated floating IP range, which will be used to '
+                    'test the floating IP bulk feature for CRUD operation.')
 ]
 
 compute_features_group = cfg.OptGroup(name='compute-feature-enabled',
@@ -255,7 +259,7 @@ compute_features_group = cfg.OptGroup(name='compute-feature-enabled',
 
 ComputeFeaturesGroup = [
     cfg.BoolOpt('api_v3',
-                default=True,
+                default=False,
                 help="If false, skip all nova v3 tests."),
     cfg.BoolOpt('disk_config',
                 default=True,
