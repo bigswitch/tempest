@@ -244,9 +244,13 @@ class JavelinCheck(unittest.TestCase):
             r, found = client.servers.get_server(found['id'])
             # get the ipv4 address
             addr = found['addresses']['private'][0]['addr']
-            self.assertEqual(os.system("ping -c 1 " + addr), 0,
-                             "Server %s is not pingable at %s" % (
-                                 server['name'], addr))
+            for count in range(60):
+                return_code = os.system("ping -c1 " + addr)
+                if return_code is 0:
+                    break
+            self.assertNotEqual(count, 59,
+                               "Server %s is not pingable at %s" % (
+                               server['name'], addr))
 
     def check_volumes(self):
         """Check that the volumes are still there and attached."""
@@ -308,6 +312,7 @@ def _resolve_image(image, imgtype):
 def create_images(images):
     if not images:
         return
+    LOG.info("Creating images")
     for image in images:
         client = client_for_user(image['owner'])
 
@@ -315,6 +320,7 @@ def create_images(images):
         r, body = client.images.image_list()
         names = [x['name'] for x in body]
         if image['name'] in names:
+            LOG.info("Image '%s' already exists" % image['name'])
             continue
 
         # special handling for 3 part image
@@ -372,15 +378,37 @@ def _get_flavor_by_name(client, name):
 def create_servers(servers):
     if not servers:
         return
+    LOG.info("Creating servers")
     for server in servers:
         client = client_for_user(server['owner'])
 
         if _get_server_by_name(client, server['name']):
+            LOG.info("Server '%s' already exists" % server['name'])
             continue
 
         image_id = _get_image_by_name(client, server['image'])['id']
         flavor_id = _get_flavor_by_name(client, server['flavor'])['id']
-        client.servers.create_server(server['name'], image_id, flavor_id)
+        resp, body = client.servers.create_server(server['name'], image_id,
+                                                 flavor_id)
+        server_id = body['id']
+        client.servers.wait_for_server_status(server_id, 'ACTIVE')
+
+
+def destroy_servers(servers):
+    if not servers:
+        return
+    LOG.info("Destroying servers")
+    for server in servers:
+        client = client_for_user(server['owner'])
+
+        response = _get_server_by_name(client, server['name'])
+        if not response:
+            LOG.info("Server '%s' does not exist" % server['name'])
+            continue
+
+        client.servers.delete_server(response['id'])
+        client.servers.wait_for_server_termination(response['id'],
+                ignore_error=True)
 
 
 #######################
@@ -439,6 +467,23 @@ def create_resources():
     # back once we're actually executing the code
     # create_volumes(RES['volumes'])
     # attach_volumes(RES['volumes'])
+
+
+def destroy_resources():
+    LOG.info("Destroying Resources")
+    # Destroy in inverse order of create
+
+    # Future
+    # detach_volumes
+    # destroy_volumes
+
+    destroy_servers(RES['servers'])
+    LOG.warn("Destroy mode incomplete")
+    # destroy_images
+    # destroy_objects
+
+    # destroy_users
+    # destroy_tenants
 
 
 def get_options():
@@ -517,7 +562,8 @@ def main():
         checker = JavelinCheck(USERS, RES)
         checker.check()
     elif OPTS.mode == 'destroy':
-        LOG.warn("Destroy mode not yet implemented")
+        collect_users(RES['users'])
+        destroy_resources()
     else:
         LOG.error('Unknown mode %s' % OPTS.mode)
         return 1
