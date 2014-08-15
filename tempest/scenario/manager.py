@@ -17,7 +17,6 @@
 import logging
 import os
 import re
-import six
 import subprocess
 import time
 
@@ -27,6 +26,7 @@ from heatclient import exc as heat_exceptions
 import netaddr
 from neutronclient.common import exceptions as exc
 from novaclient import exceptions as nova_exceptions
+import six
 
 from tempest.api.network import common as net_common
 from tempest import auth
@@ -490,6 +490,9 @@ class OfficialClientTest(tempest.test.BaseTestCase):
         return linux_client
 
     def _log_console_output(self, servers=None):
+        if not CONF.compute_feature_enabled.console_output:
+            LOG.debug('Console output not supported, cannot log')
+            return
         if not servers:
             servers = self.compute_client.servers.list()
         for server in servers:
