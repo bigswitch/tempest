@@ -152,6 +152,8 @@ class TestSecurityGroupsBasicOps(manager.NetworkScenarioTest):
         for tenant in [cls.primary_tenant, cls.alt_tenant]:
             cls.tenants[tenant.creds.tenant_id] = tenant
         cls.floating_ip_access = not CONF.network.public_router_id
+        # work-around for broken probe port
+        cls.floating_ip_access = False
 
     def cleanup_wrapper(self, resource):
         self.cleanup_resource(resource, self.__class__.__name__)

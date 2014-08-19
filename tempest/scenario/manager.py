@@ -842,6 +842,9 @@ class NetworkScenarioTest(OfficialClientTest):
         return routers['routers']
 
     def _list_ports(self, **kwargs):
+        # workaround for BSN plugin bug
+        if 'fields' in kwargs and 'id' not in kwargs['fields']:
+            kwargs['fields'].append('id')
         ports = self.network_client.list_ports(**kwargs)
         return ports['ports']
 
