@@ -264,7 +264,7 @@ class IsolatedCreds(cred_provider.CredentialProvider):
                     body['subnet']['cidr'] = str(subnet_cidr)
                     resp_body = self.network_admin_client.create_subnet(body)
                 break
-            except n_exc.BadRequest as e:
+            except (n_exc.BadRequest, exceptions.BadRequest) as e:
                 if 'overlaps with another subnet' not in str(e):
                     raise
         else:
