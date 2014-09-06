@@ -94,6 +94,13 @@ class ScenarioTest(tempest.test.BaseTestCase):
         cls.network_client = cls.manager.network_client
 
     @classmethod
+    def tearDownClass(cls):
+        # Isolated creds also manages network resources, which should
+        # be cleaned up at the end of the test case
+        cls.isolated_creds.clear_isolated_creds()
+        super(ScenarioTest, cls).tearDownClass()
+
+    @classmethod
     def _get_credentials(cls, get_creds, ctype):
         if CONF.compute.allow_tenant_isolation:
             creds = get_creds()
@@ -398,6 +405,9 @@ class ScenarioTest(tempest.test.BaseTestCase):
         LOG.debug("image:%s" % self.image)
 
     def _log_console_output(self, servers=None):
+        if not CONF.compute_feature_enabled.console_output:
+            LOG.debug('Console output not supported, cannot log')
+            return
         if not servers:
             _, servers = self.servers_client.list_servers()
             servers = servers['servers']
