@@ -624,7 +624,7 @@ class NeutronScenarioTest(ScenarioTest):
             proc = subprocess.Popen(cmd,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            proc.wait()
+            proc.communicate()
             return (proc.returncode == 0) == should_succeed
 
         return tempest.test.call_until_true(
@@ -1835,7 +1835,7 @@ class NetworkScenarioTest(OfficialClientTest):
             proc = subprocess.Popen(cmd,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            proc.wait()
+            proc.communicate()
             return (proc.returncode == 0) == should_succeed
 
         return tempest.test.call_until_true(
@@ -2270,7 +2270,7 @@ class OrchestrationScenarioTest(ScenarioTest):
             proc = subprocess.Popen(cmd,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-            proc.wait()
+            proc.communicate()
             return (proc.returncode == 0) == should_succeed
 
         return tempest.test.call_until_true(
