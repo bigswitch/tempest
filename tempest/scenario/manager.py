@@ -475,9 +475,9 @@ class NetworkScenarioTest(ScenarioTest):
 
     @classmethod
     def resource_setup(cls):
+        cls.check_preconditions()
         super(NetworkScenarioTest, cls).resource_setup()
         cls.tenant_id = cls.manager.identity_client.tenant_id
-        cls.check_preconditions()
 
     def _create_network(self, client=None, tenant_id=None,
                         namestart='network-smoke-'):
@@ -1022,12 +1022,11 @@ class BaremetalProvisionStates(object):
 class BaremetalScenarioTest(ScenarioTest):
     @classmethod
     def resource_setup(cls):
-        super(BaremetalScenarioTest, cls).resource_setup()
-
         if (not CONF.service_available.ironic or
            not CONF.baremetal.driver_enabled):
             msg = 'Ironic not available or Ironic compute driver not enabled'
             raise cls.skipException(msg)
+        super(BaremetalScenarioTest, cls).resource_setup()
 
         # use an admin client manager for baremetal client
         manager = clients.Manager(
@@ -1755,9 +1754,9 @@ class OrchestrationScenarioTest(ScenarioTest):
 
     @classmethod
     def resource_setup(cls):
-        super(OrchestrationScenarioTest, cls).resource_setup()
         if not CONF.service_available.heat:
             raise cls.skipException("Heat support is required")
+        super(OrchestrationScenarioTest, cls).resource_setup()
 
     @classmethod
     def credentials(cls):
@@ -1800,12 +1799,12 @@ class SwiftScenarioTest(ScenarioTest):
 
     @classmethod
     def resource_setup(cls):
-        cls.set_network_resources()
-        super(SwiftScenarioTest, cls).resource_setup()
         if not CONF.service_available.swift:
             skip_msg = ("%s skipped as swift is not available" %
                         cls.__name__)
             raise cls.skipException(skip_msg)
+        cls.set_network_resources()
+        super(SwiftScenarioTest, cls).resource_setup()
         # Clients for Swift
         cls.account_client = cls.manager.account_client
         cls.container_client = cls.manager.container_client
@@ -1823,6 +1822,9 @@ class SwiftScenarioTest(ScenarioTest):
         # look for the container to assure it is created
         self.list_and_check_container_objects(name)
         LOG.debug('Container %s created' % (name))
+        self.addCleanup(self.delete_wrapper,
+                        self.container_client.delete_container,
+                        name)
         return name
 
     def delete_container(self, container_name):
@@ -1833,6 +1835,10 @@ class SwiftScenarioTest(ScenarioTest):
         obj_name = obj_name or data_utils.rand_name('swift-scenario-object')
         obj_data = data_utils.arbitrary_string()
         self.object_client.create_object(container_name, obj_name, obj_data)
+        self.addCleanup(self.delete_wrapper,
+                        self.object_client.delete_object,
+                        container_name,
+                        obj_name)
         return obj_name, obj_data
 
     def delete_object(self, container_name, filename):
