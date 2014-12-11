@@ -24,7 +24,6 @@ import six
 from tempest import auth
 from tempest import clients
 from tempest.common import credentials
-from tempest.common import debug
 from tempest.common.utils import data_utils
 from tempest.common.utils.linux import remote_client
 from tempest import config
@@ -326,7 +325,6 @@ class ScenarioTest(tempest.test.BaseTestCase):
             linux_client.validate_authentication()
         except Exception:
             LOG.exception('Initializing SSH connection to %s failed' % ip)
-            debug.log_net_debug()
             # If we don't explicitely set for which servers we want to
             # log the console output then all the servers will be logged.
             # See the definition of _log_console_output()
@@ -400,7 +398,6 @@ class ScenarioTest(tempest.test.BaseTestCase):
         # network debug is called as part of ssh init
         if not isinstance(exc, exceptions.SSHTimeout):
             LOG.debug('Network information on a devstack host')
-            debug.log_net_debug()
 
     def create_server_snapshot(self, server, name=None):
         # Glance client
@@ -510,15 +507,12 @@ class ScenarioTest(tempest.test.BaseTestCase):
                                        username,
                                        private_key,
                                        should_connect=should_connect)
-        except Exception as e:
+        except Exception:
             ex_msg = 'Public network connectivity check failed'
             if msg:
                 ex_msg += ": " + msg
             LOG.exception(ex_msg)
             self._log_console_output(servers)
-            # network debug is called as part of ssh init
-            if not isinstance(e, exceptions.SSHTimeout):
-                debug.log_net_debug()
             raise
 
     def create_floating_ip(self, thing, pool_name=None):
@@ -612,22 +606,31 @@ class NetworkScenarioTest(ScenarioTest):
             cidr_in_use = self._list_subnets(tenant_id=tenant_id, cidr=cidr)
             return len(cidr_in_use) != 0
 
-        tenant_cidr = netaddr.IPNetwork(CONF.network.tenant_network_cidr)
+        ip_version = kwargs.pop('ip_version', 4)
+
+        if ip_version == 6:
+            tenant_cidr = netaddr.IPNetwork(
+                CONF.network.tenant_network_v6_cidr)
+            num_bits = CONF.network.tenant_network_v6_mask_bits
+        else:
+            tenant_cidr = netaddr.IPNetwork(CONF.network.tenant_network_cidr)
+            num_bits = CONF.network.tenant_network_mask_bits
+
         result = None
+        str_cidr = None
         # Repeatedly attempt subnet creation with sequential cidr
         # blocks until an unallocated block is found.
-        for subnet_cidr in tenant_cidr.subnet(
-                CONF.network.tenant_network_mask_bits):
+        for subnet_cidr in tenant_cidr.subnet(num_bits):
             str_cidr = str(subnet_cidr)
             if cidr_in_use(str_cidr, tenant_id=network.tenant_id):
                 continue
 
             subnet = dict(
                 name=data_utils.rand_name(namestart),
-                ip_version=4,
                 network_id=network.id,
                 tenant_id=network.tenant_id,
                 cidr=str_cidr,
+                ip_version=ip_version,
                 **kwargs
             )
             try:
@@ -658,12 +661,17 @@ class NetworkScenarioTest(ScenarioTest):
         self.addCleanup(self.delete_wrapper, port.delete)
         return port
 
-    def _get_server_port_id(self, server, ip_addr=None):
+    def _get_server_port_id_and_ip4(self, server, ip_addr=None):
         ports = self._list_ports(device_id=server['id'],
                                  fixed_ip=ip_addr)
         self.assertEqual(len(ports), 1,
                          "Unable to determine which port to target.")
-        return ports[0]['id']
+        # it might happen here that this port has more then one ip address
+        # as in case of dual stack- when this port is created on 2 subnets
+        for ip46 in ports[0]['fixed_ips']:
+            ip = ip46['ip_address']
+            if netaddr.valid_ipv4(ip):
+                return ports[0]['id'], ip
 
     def _get_network_by_name(self, network_name):
         net = self._list_networks(name=network_name)
@@ -679,11 +687,14 @@ class NetworkScenarioTest(ScenarioTest):
         if not client:
             client = self.network_client
         if not port_id:
-            port_id = self._get_server_port_id(thing)
+            port_id, ip4 = self._get_server_port_id_and_ip4(thing)
+        else:
+            ip4 = None
         _, result = client.create_floatingip(
             floating_network_id=external_network_id,
             port_id=port_id,
-            tenant_id=thing['tenant_id']
+            tenant_id=thing['tenant_id'],
+            fixed_ip_address=ip4
         )
         floating_ip = net_resources.DeletableFloatingIp(
             client=client,
@@ -692,7 +703,7 @@ class NetworkScenarioTest(ScenarioTest):
         return floating_ip
 
     def _associate_floating_ip(self, floating_ip, server):
-        port_id = self._get_server_port_id(server)
+        port_id, _ = self._get_server_port_id_and_ip4(server)
         floating_ip.update(port_id=port_id)
         self.assertEqual(port_id, floating_ip.port_id)
         return floating_ip
