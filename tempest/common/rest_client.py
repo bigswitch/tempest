@@ -76,18 +76,6 @@ class RestClient(object):
 
     TYPE = "json"
 
-    # This is used by _parse_resp method
-    # Redefine it for purposes of your xml service client
-    # List should contain top-xml_tag-names of data, which is like list/array
-    # For example, in keystone it is users, roles, tenants and services
-    # All of it has children with same tag-names
-    list_tags = []
-
-    # This is used by _parse_resp method too
-    # Used for selection of dict-like xmls,
-    # like metadata for Vms in nova, and volumes in cinder
-    dict_tags = ["metadata", ]
-
     LOG = logging.getLogger(__name__)
 
     def __init__(self, auth_provider):
@@ -165,11 +153,6 @@ class RestClient(object):
             if catalog_type == service:
                 endpoint_type = getattr(cfg, 'endpoint_type', 'publicURL')
                 break
-        # Special case for compute v3 service which hasn't its own
-        # configuration group
-        else:
-            if service == CONF.compute.catalog_v3_type:
-                endpoint_type = CONF.compute.endpoint_type
         return endpoint_type
 
     @property
@@ -495,9 +478,8 @@ class RestClient(object):
         # (and occasionally swift) are using.
         TXT_ENC = ['text/plain', 'text/html', 'text/html; charset=utf-8',
                    'text/plain; charset=utf-8']
-        XML_ENC = ['application/xml', 'application/xml; charset=utf-8']
 
-        if ctype.lower() in JSON_ENC or ctype.lower() in XML_ENC:
+        if ctype.lower() in JSON_ENC:
             parse_resp = True
         elif ctype.lower() in TXT_ENC:
             parse_resp = False
@@ -552,15 +534,17 @@ class RestClient(object):
                             message = resp_body['cloudServersFault']['message']
                         elif 'computeFault' in resp_body:
                             message = resp_body['computeFault']['message']
-                        elif 'error' in resp_body:  # Keystone errors
+                        elif 'error' in resp_body:
                             message = resp_body['error']['message']
-                            raise exceptions.IdentityError(message)
                         elif 'message' in resp_body:
                             message = resp_body['message']
                     else:
                         message = resp_body
 
-            raise exceptions.ServerFault(message)
+            if resp.status == 501:
+                raise exceptions.NotImplemented(message)
+            else:
+                raise exceptions.ServerFault(message)
 
         if resp.status >= 400:
             raise exceptions.UnexpectedResponseCode(str(resp.status))
@@ -569,13 +553,10 @@ class RestClient(object):
         if (not isinstance(resp_body, collections.Mapping) or
                 'retry-after' not in resp):
             return True
-        if self._get_type() is "json":
-            over_limit = resp_body.get('overLimit', None)
-            if not over_limit:
-                return True
-            return 'exceed' in over_limit.get('message', 'blabla')
-        elif self._get_type() is "xml":
-            return 'exceed' in resp_body.get('message', 'blabla')
+        over_limit = resp_body.get('overLimit', None)
+        if not over_limit:
+            return True
+        return 'exceed' in over_limit.get('message', 'blabla')
 
     def wait_for_resource_deletion(self, id):
         """Waits for a resource to be deleted."""
