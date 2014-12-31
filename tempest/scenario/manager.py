@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
 import os
 import subprocess
 
@@ -35,13 +34,6 @@ import tempest.test
 CONF = config.CONF
 
 LOG = log.getLogger(__name__)
-
-# NOTE(afazekas): Workaround for the stdout logging
-LOG_nova_client = logging.getLogger('novaclient.client')
-LOG_nova_client.addHandler(log.NullHandler())
-
-LOG_cinder_client = logging.getLogger('cinderclient.client')
-LOG_cinder_client.addHandler(log.NullHandler())
 
 
 class ScenarioTest(tempest.test.BaseTestCase):
@@ -751,9 +743,9 @@ class NetworkScenarioTest(ScenarioTest):
         # The target login is assumed to have been configured for
         # key-based authentication by cloud-init.
         try:
-            for net_name, ip_addresses in server['networks'].iteritems():
+            for net_name, ip_addresses in server['addresses'].iteritems():
                 for ip_address in ip_addresses:
-                    self.check_vm_connectivity(ip_address,
+                    self.check_vm_connectivity(ip_address['addr'],
                                                username,
                                                private_key,
                                                should_connect=should_connect)
