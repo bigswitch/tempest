@@ -163,10 +163,6 @@ class BadRequest(RestClientException):
     message = "Bad request"
 
 
-class UnprocessableEntity(RestClientException):
-    message = "Unprocessable entity"
-
-
 class OverLimit(RestClientException):
     message = "Quota exceeded"
 
@@ -187,10 +183,6 @@ class ResponseWithEntity(RFCViolation):
 
 class InvalidHTTPResponseHeader(RestClientException):
     message = "HTTP response header is invalid"
-
-
-class InvalidContentType(RestClientException):
-    message = "Invalid content type provided"
 
 
 class InvalidStructure(TempestException):
