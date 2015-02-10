@@ -474,11 +474,10 @@ class JavelinCheck(unittest.TestCase):
         LOG.info("checking telemetry")
         for server in self.res['servers']:
             client = client_for_user(server['owner'])
-            response, body = client.telemetry.list_samples(
+            body = client.telemetry.list_samples(
                 'instance',
                 query=('metadata.display_name', 'eq', server['name'])
             )
-            self.assertEqual(response.status, 200)
             self.assertTrue(len(body) >= 1, 'expecting at least one sample')
             self._confirm_telemetry_sample(server, body[-1])
 
@@ -789,7 +788,7 @@ def _get_server_by_name(client, name):
 
 
 def _get_flavor_by_name(client, name):
-    r, body = client.flavors.list_flavors()
+    body = client.flavors.list_flavors()
     for flavor in body:
         if name == flavor['name']:
             return flavor
