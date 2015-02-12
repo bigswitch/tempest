@@ -15,12 +15,12 @@
 # under the License.
 
 from tempest_lib import decorators
+from tempest_lib import exceptions as lib_exc
 
 from tempest.api.object_storage import base
 from tempest import clients
 from tempest.common.utils import data_utils
 from tempest import config
-from tempest import exceptions
 from tempest import test
 
 CONF = config.CONF
@@ -85,12 +85,12 @@ class AccountQuotasNegativeTest(base.BaseObjectTest):
         """
 
         # Not able to remove quota
-        self.assertRaises(exceptions.Unauthorized,
+        self.assertRaises(lib_exc.Unauthorized,
                           self.account_client.create_account_metadata,
                           {"Quota-Bytes": ""})
 
         # Not able to modify quota
-        self.assertRaises(exceptions.Unauthorized,
+        self.assertRaises(lib_exc.Unauthorized,
                           self.account_client.create_account_metadata,
                           {"Quota-Bytes": "100"})
 
@@ -100,6 +100,6 @@ class AccountQuotasNegativeTest(base.BaseObjectTest):
     def test_upload_large_object(self):
         object_name = data_utils.rand_name(name="TestObject")
         data = data_utils.arbitrary_string(30)
-        self.assertRaises(exceptions.OverLimit,
+        self.assertRaises(lib_exc.OverLimit,
                           self.object_client.create_object,
                           self.container_name, object_name, data)

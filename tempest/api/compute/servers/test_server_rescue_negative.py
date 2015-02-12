@@ -12,12 +12,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+from tempest_lib import exceptions as lib_exc
 import testtools
 
 from tempest.api.compute import base
 from tempest.common.utils import data_utils
 from tempest import config
-from tempest import exceptions
 from tempest import test
 
 CONF = config.CONF
@@ -81,26 +82,26 @@ class ServerRescueNegativeTestJSON(base.BaseV2ComputeTest):
         self.addCleanup(self._unpause, self.server_id)
         self.assertEqual(202, resp.status)
         self.servers_client.wait_for_server_status(self.server_id, 'PAUSED')
-        self.assertRaises(exceptions.Conflict,
+        self.assertRaises(lib_exc.Conflict,
                           self.servers_client.rescue_server,
                           self.server_id)
 
     @test.attr(type=['negative', 'gate'])
     def test_rescued_vm_reboot(self):
-        self.assertRaises(exceptions.Conflict, self.servers_client.reboot,
+        self.assertRaises(lib_exc.Conflict, self.servers_client.reboot,
                           self.rescue_id, 'HARD')
 
     @test.attr(type=['negative', 'gate'])
     def test_rescue_non_existent_server(self):
         # Rescue a non-existing server
         non_existent_server = data_utils.rand_uuid()
-        self.assertRaises(exceptions.NotFound,
+        self.assertRaises(lib_exc.NotFound,
                           self.servers_client.rescue_server,
                           non_existent_server)
 
     @test.attr(type=['negative', 'gate'])
     def test_rescued_vm_rebuild(self):
-        self.assertRaises(exceptions.Conflict,
+        self.assertRaises(lib_exc.Conflict,
                           self.servers_client.rebuild,
                           self.rescue_id,
                           self.image_ref_alt)
@@ -117,7 +118,7 @@ class ServerRescueNegativeTestJSON(base.BaseV2ComputeTest):
         self.addCleanup(self._unrescue, self.server_id)
 
         # Attach the volume to the server
-        self.assertRaises(exceptions.Conflict,
+        self.assertRaises(lib_exc.Conflict,
                           self.servers_client.attach_volume,
                           self.server_id,
                           volume['id'],
@@ -144,7 +145,7 @@ class ServerRescueNegativeTestJSON(base.BaseV2ComputeTest):
         self.addCleanup(self._unrescue, self.server_id)
 
         # Detach the volume from the server expecting failure
-        self.assertRaises(exceptions.Conflict,
+        self.assertRaises(lib_exc.Conflict,
                           self.servers_client.detach_volume,
                           self.server_id,
                           volume['id'])

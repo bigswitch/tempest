@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest_lib import exceptions as lib_exc
+
 from tempest.api.compute import base
 from tempest import config
 from tempest import exceptions
@@ -43,14 +45,14 @@ class FixedIPsNegativeTestJson(base.BaseV2ComputeAdminTest):
     @test.attr(type=['negative', 'gate'])
     @test.services('network')
     def test_list_fixed_ip_details_with_non_admin_user(self):
-        self.assertRaises(exceptions.Unauthorized,
+        self.assertRaises(lib_exc.Unauthorized,
                           self.non_admin_client.get_fixed_ip_details, self.ip)
 
     @test.attr(type=['negative', 'gate'])
     @test.services('network')
     def test_set_reserve_with_non_admin_user(self):
         body = {"reserve": "None"}
-        self.assertRaises(exceptions.Unauthorized,
+        self.assertRaises(lib_exc.Unauthorized,
                           self.non_admin_client.reserve_fixed_ip,
                           self.ip, body)
 
@@ -58,7 +60,7 @@ class FixedIPsNegativeTestJson(base.BaseV2ComputeAdminTest):
     @test.services('network')
     def test_set_unreserve_with_non_admin_user(self):
         body = {"unreserve": "None"}
-        self.assertRaises(exceptions.Unauthorized,
+        self.assertRaises(lib_exc.Unauthorized,
                           self.non_admin_client.reserve_fixed_ip,
                           self.ip, body)
 
@@ -71,7 +73,7 @@ class FixedIPsNegativeTestJson(base.BaseV2ComputeAdminTest):
         # NOTE(eliqiao): in Juno, the exception is NotFound, but in master, we
         # change the error code to BadRequest, both exceptions should be
         # accepted by tempest
-        self.assertRaises((exceptions.NotFound, exceptions.BadRequest),
+        self.assertRaises((lib_exc.NotFound, exceptions.BadRequest),
                           self.client.reserve_fixed_ip,
                           "my.invalid.ip", body)
 

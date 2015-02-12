@@ -13,9 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest_lib import exceptions as lib_exc
+
 from tempest.api.compute import base
 from tempest.common import tempest_fixtures as fixtures
-from tempest import exceptions
 from tempest import test
 
 
@@ -51,5 +52,5 @@ class AbsoluteLimitsNegativeTestJSON(base.BaseV2ComputeTest):
 
         # A 403 Forbidden or 413 Overlimit (old behaviour) exception
         # will be raised when out of quota
-        self.assertRaises((exceptions.Unauthorized, exceptions.OverLimit),
+        self.assertRaises((lib_exc.Unauthorized, lib_exc.OverLimit),
                           self.create_test_server, meta=meta_data)

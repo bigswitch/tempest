@@ -14,6 +14,7 @@
 
 import uuid
 
+from tempest_lib import exceptions as lib_exc
 import testtools
 
 from tempest.api.compute import base
@@ -50,7 +51,7 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
         while True:
             try:
                 self.flavors_client.get_flavor_details(flavor_id)
-            except exceptions.NotFound:
+            except lib_exc.NotFound:
                 break
             flavor_id = data_utils.rand_int_id(start=1000)
         return flavor_id
@@ -71,7 +72,7 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
                                                        ram, vcpus, disk,
                                                        flavor_id)
         self.addCleanup(self.flavors_client.delete_flavor, flavor_id)
-        self.assertRaises((exceptions.Unauthorized, exceptions.OverLimit),
+        self.assertRaises((lib_exc.Unauthorized, lib_exc.OverLimit),
                           self.client.resize,
                           self.servers[0]['id'],
                           flavor_ref['id'])
@@ -92,7 +93,7 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
                                                        ram, vcpus, disk,
                                                        flavor_id)
         self.addCleanup(self.flavors_client.delete_flavor, flavor_id)
-        self.assertRaises((exceptions.Unauthorized, exceptions.OverLimit),
+        self.assertRaises((lib_exc.Unauthorized, lib_exc.OverLimit),
                           self.client.resize,
                           self.servers[0]['id'],
                           flavor_ref['id'])
@@ -111,20 +112,20 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
 
     @test.attr(type=['negative', 'gate'])
     def test_reset_state_server_nonexistent_server(self):
-        self.assertRaises(exceptions.NotFound,
+        self.assertRaises(lib_exc.NotFound,
                           self.client.reset_state, '999')
 
     @test.attr(type=['negative', 'gate'])
     def test_get_server_diagnostics_by_non_admin(self):
         # Non-admin user can not view server diagnostics according to policy
-        self.assertRaises(exceptions.Unauthorized,
+        self.assertRaises(lib_exc.Unauthorized,
                           self.non_adm_client.get_server_diagnostics,
                           self.s1_id)
 
     @test.attr(type=['negative', 'gate'])
     def test_migrate_non_existent_server(self):
         # migrate a non existent server
-        self.assertRaises(exceptions.NotFound,
+        self.assertRaises(lib_exc.NotFound,
                           self.client.migrate_server,
                           str(uuid.uuid4()))
 
@@ -143,6 +144,6 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
         self.assertEqual(202, resp.status)
         self.client.wait_for_server_status(server_id, 'SUSPENDED')
         # migrate an suspended server should fail
-        self.assertRaises(exceptions.Conflict,
+        self.assertRaises(lib_exc.Conflict,
                           self.client.migrate_server,
                           server_id)

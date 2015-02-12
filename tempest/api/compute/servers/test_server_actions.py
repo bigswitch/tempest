@@ -18,13 +18,13 @@ import logging
 import urlparse
 
 from tempest_lib import decorators
+from tempest_lib import exceptions as lib_exc
 import testtools
 
 from tempest.api.compute import base
 from tempest.common.utils import data_utils
 from tempest.common.utils.linux import remote_client
 from tempest import config
-from tempest import exceptions
 from tempest import test
 
 CONF = config.CONF
@@ -262,7 +262,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
             if oldest_backup_exist:
                 try:
                     self.os.image_client.delete_image(oldest_backup)
-                except exceptions.NotFound:
+                except lib_exc.NotFound:
                     pass
                 else:
                     LOG.warning("Deletion of oldest backup %s should not have "
@@ -464,7 +464,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         self.assertEqual(200, resp.status)
         self.assertEqual(server['status'], 'ACTIVE')
         # Locked server is not allowed to be stopped by non-admin user
-        self.assertRaises(exceptions.Conflict,
+        self.assertRaises(lib_exc.Conflict,
                           self.servers_client.stop, self.server_id)
         resp, server = self.servers_client.unlock_server(self.server_id)
         self.assertEqual(202, resp.status)

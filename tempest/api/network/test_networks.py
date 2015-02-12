@@ -15,12 +15,12 @@
 import itertools
 
 import netaddr
+from tempest_lib import exceptions as lib_exc
 
 from tempest.api.network import base
 from tempest.common import custom_matchers
 from tempest.common.utils import data_utils
 from tempest import config
-from tempest import exceptions
 from tempest import test
 
 CONF = config.CONF
@@ -280,7 +280,7 @@ class NetworksTestJSON(base.BaseNetworkTest):
         try:
             self.client.delete_network(net_id)
         # if network is not found, this means it was deleted in the test
-        except exceptions.NotFound:
+        except lib_exc.NotFound:
             pass
 
     @test.attr(type='smoke')
@@ -300,7 +300,7 @@ class NetworksTestJSON(base.BaseNetworkTest):
         body = self.client.delete_network(net_id)
 
         # Verify that the subnet got automatically deleted.
-        self.assertRaises(exceptions.NotFound, self.client.show_subnet,
+        self.assertRaises(lib_exc.NotFound, self.client.show_subnet,
                           subnet_id)
 
         # Since create_subnet adds the subnet to the delete list, and it is
@@ -614,7 +614,7 @@ class NetworksIpV6TestAttrs(NetworksIpV6TestJSON):
         self.assertNotIn(subnet_slaac['id'], subnet_ids,
                          "Subnet wasn't deleted")
         self.assertRaisesRegexp(
-            exceptions.Conflict,
+            lib_exc.Conflict,
             "There are one or more ports still in use on the network",
             self.client.delete_network,
             slaac_network['id'])

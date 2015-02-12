@@ -151,24 +151,8 @@ class InvalidHttpSuccessCode(RestClientException):
     message = "The success code is different than the expected one"
 
 
-class NotFound(RestClientException):
-    message = "Object not found"
-
-
-class Unauthorized(RestClientException):
-    message = 'Unauthorized'
-
-
 class BadRequest(RestClientException):
     message = "Bad request"
-
-
-class OverLimit(RestClientException):
-    message = "Quota exceeded"
-
-
-class Conflict(RestClientException):
-    message = "An object with that identifier already exists"
 
 
 class ResponseWithNonEmptyBody(RFCViolation):
