@@ -38,34 +38,21 @@ class AuthProvider(object):
     Provide authentication
     """
 
-    def __init__(self, credentials, interface=None):
+    def __init__(self, credentials):
         """
         :param credentials: credentials for authentication
-        :param interface: 'json' or 'xml'. Applicable for tempest client only
-            (deprecated: only json now supported)
         """
-        credentials = self._convert_credentials(credentials)
         if self.check_credentials(credentials):
             self.credentials = credentials
         else:
             raise TypeError("Invalid credentials")
-        self.interface = 'json'
         self.cache = None
         self.alt_auth_data = None
         self.alt_part = None
 
-    def _convert_credentials(self, credentials):
-        # Support dict credentials for backwards compatibility
-        if isinstance(credentials, dict):
-            return get_credentials(**credentials)
-        else:
-            return credentials
-
     def __str__(self):
-        return "Creds :{creds}, interface: {interface}, " \
-               "cached auth data: {cache}".format(
-                   creds=self.credentials, interface=self.interface,
-                   cache=self.cache)
+        return "Creds :{creds}, cached auth data: {cache}".format(
+            creds=self.credentials, cache=self.cache)
 
     @abc.abstractmethod
     def _decorate_request(self, filters, method, url, headers=None, body=None,
@@ -201,8 +188,8 @@ class KeystoneAuthProvider(AuthProvider):
 
     token_expiry_threshold = datetime.timedelta(seconds=60)
 
-    def __init__(self, credentials, interface=None):
-        super(KeystoneAuthProvider, self).__init__(credentials, interface)
+    def __init__(self, credentials):
+        super(KeystoneAuthProvider, self).__init__(credentials)
         self.auth_client = self._auth_client()
 
     def _decorate_request(self, filters, method, url, headers=None, body=None,
@@ -440,7 +427,11 @@ class KeystoneV3AuthProvider(KeystoneAuthProvider):
             datetime.datetime.utcnow()
 
 
-def get_credentials(fill_in=True, **kwargs):
+def is_identity_version_supported(identity_version):
+    return identity_version in IDENTITY_VERSION
+
+
+def get_credentials(fill_in=True, identity_version='v2', **kwargs):
     """
     Builds a credentials object based on the configured auth_version
 
@@ -448,6 +439,8 @@ def get_credentials(fill_in=True, **kwargs):
            details provided by the identity service. When fill_in is not
            specified, credentials are not validated. Validation can be invoked
            by invoking ``is_valid()``
+    :param identity_version (string): identity API version is used to
+           select the matching auth provider and credentials class
     :param kwargs (dict): Dict of credential key/value pairs
 
     Examples:
@@ -458,14 +451,13 @@ def get_credentials(fill_in=True, **kwargs):
         Returns credentials including IDs:
         >>> get_credentials(username='foo', password='bar', fill_in=True)
     """
-    if CONF.identity.auth_version == 'v2':
-        credential_class = KeystoneV2Credentials
-        auth_provider_class = KeystoneV2AuthProvider
-    elif CONF.identity.auth_version == 'v3':
-        credential_class = KeystoneV3Credentials
-        auth_provider_class = KeystoneV3AuthProvider
-    else:
-        raise exceptions.InvalidConfiguration('Unsupported auth version')
+    if not is_identity_version_supported(identity_version):
+        raise exceptions.InvalidIdentityVersion(
+            identity_version=identity_version)
+
+    credential_class, auth_provider_class = IDENTITY_VERSION.get(
+        identity_version)
+
     creds = credential_class(**kwargs)
     # Fill in the credentials fields that were not specified
     if fill_in:
@@ -638,3 +630,7 @@ class KeystoneV3Credentials(Credentials):
              self.project_id is not None,
              self.project_name is not None and valid_project_domain])
         return all([self.password is not None, valid_user, valid_project])
+
+
+IDENTITY_VERSION = {'v2': (KeystoneV2Credentials, KeystoneV2AuthProvider),
+                    'v3': (KeystoneV3Credentials, KeystoneV3AuthProvider)}

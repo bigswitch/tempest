@@ -15,7 +15,6 @@
 import netaddr
 from tempest_lib import exceptions as lib_exc
 
-from tempest import auth
 from tempest import clients
 from tempest.common import cred_provider
 from tempest.common.utils import data_utils
@@ -29,15 +28,12 @@ LOG = logging.getLogger(__name__)
 
 class IsolatedCreds(cred_provider.CredentialProvider):
 
-    def __init__(self, name, interface='json', password='pass',
-                 network_resources=None):
-        super(IsolatedCreds, self).__init__(name, interface, password,
-                                            network_resources)
+    def __init__(self, name, password='pass', network_resources=None):
+        super(IsolatedCreds, self).__init__(name, password, network_resources)
         self.network_resources = network_resources
         self.isolated_creds = {}
         self.isolated_net_resources = {}
         self.ports = []
-        self.interface = interface
         self.password = password
         self.identity_admin_client, self.network_admin_client = (
             self._get_admin_clients())
@@ -49,7 +45,7 @@ class IsolatedCreds(cred_provider.CredentialProvider):
             identity
             network
         """
-        os = clients.AdminManager(interface=self.interface)
+        os = clients.AdminManager()
         return os.identity_client, os.network_client
 
     def _create_tenant(self, name, description):
@@ -130,7 +126,7 @@ class IsolatedCreds(cred_provider.CredentialProvider):
         return self._get_credentials(user, tenant)
 
     def _get_credentials(self, user, tenant):
-        return auth.get_credentials(
+        return cred_provider.get_credentials(
             username=user['name'], user_id=user['id'],
             tenant_name=tenant['name'], tenant_id=tenant['id'],
             password=self.password)
