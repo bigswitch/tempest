@@ -14,15 +14,18 @@ from tempest.api.identity import base
 from tempest import auth
 from tempest import clients
 from tempest.common.utils import data_utils
+from tempest import config
 from tempest import test
+
+CONF = config.CONF
 
 
 class TestDefaultProjectId (base.BaseIdentityV3AdminTest):
 
     @classmethod
-    def resource_setup(cls):
+    def setup_credentials(cls):
         cls.set_network_resources()
-        super(TestDefaultProjectId, cls).resource_setup()
+        super(TestDefaultProjectId, cls).setup_credentials()
 
     def _delete_domain(self, domain_id):
         # It is necessary to disable the domain before deleting,
@@ -71,7 +74,8 @@ class TestDefaultProjectId (base.BaseIdentityV3AdminTest):
         creds = auth.KeystoneV3Credentials(username=user_name,
                                            password=user_name,
                                            domain_name=dom_name)
-        auth_provider = auth.KeystoneV3AuthProvider(creds)
+        auth_provider = auth.KeystoneV3AuthProvider(creds,
+                                                    CONF.identity.uri_v3)
         creds = auth_provider.fill_credentials()
         admin_client = clients.Manager(credentials=creds)
 
