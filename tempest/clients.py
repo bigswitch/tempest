@@ -195,8 +195,22 @@ class Manager(manager.Manager):
                 endpoint_type=CONF.telemetry.endpoint_type,
                 **self.default_params_with_timeout_values)
         if CONF.service_available.glance:
-            self.image_client = ImageClientJSON(self.auth_provider)
-            self.image_client_v2 = ImageClientV2JSON(self.auth_provider)
+            self.image_client = ImageClientJSON(
+                self.auth_provider,
+                CONF.image.catalog_type,
+                CONF.image.region or CONF.identity.region,
+                endpoint_type=CONF.image.endpoint_type,
+                build_interval=CONF.image.build_interval,
+                build_timeout=CONF.image.build_timeout,
+                **self.default_params)
+            self.image_client_v2 = ImageClientV2JSON(
+                self.auth_provider,
+                CONF.image.catalog_type,
+                CONF.image.region or CONF.identity.region,
+                endpoint_type=CONF.image.endpoint_type,
+                build_interval=CONF.image.build_interval,
+                build_timeout=CONF.image.build_timeout,
+                **self.default_params)
         self.orchestration_client = OrchestrationClient(
             self.auth_provider,
             CONF.orchestration.catalog_type,
@@ -240,7 +254,11 @@ class Manager(manager.Manager):
             SecurityGroupDefaultRulesClientJSON(self.auth_provider, **params))
         self.certificates_client = CertificatesClientJSON(self.auth_provider,
                                                           **params)
-        self.servers_client = ServersClientJSON(self.auth_provider, **params)
+        self.servers_client = ServersClientJSON(
+            self.auth_provider,
+            enable_instance_password=CONF.compute_feature_enabled
+                .enable_instance_password,
+            **params)
         self.limits_client = LimitsClientJSON(self.auth_provider, **params)
         self.images_client = ImagesClientJSON(self.auth_provider, **params)
         self.keypairs_client = KeyPairsClientJSON(self.auth_provider, **params)
