@@ -14,6 +14,7 @@
 #    under the License.
 
 import netaddr
+from oslo_log import log as logging
 from tempest_lib.common.utils import data_utils
 from tempest_lib import exceptions as lib_exc
 import time
@@ -21,7 +22,6 @@ import time
 from tempest import clients
 from tempest import config
 from tempest import exceptions
-from tempest.openstack.common import log as logging
 import tempest.test
 
 CONF = config.CONF
