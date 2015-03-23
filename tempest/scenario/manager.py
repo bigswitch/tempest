@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import subprocess
 
 import netaddr
@@ -24,7 +23,6 @@ from tempest_lib.common.utils import data_utils
 from tempest_lib import exceptions as lib_exc
 
 from tempest import clients
-from tempest.common import cred_provider
 from tempest.common import credentials
 from tempest.common.utils.linux import remote_client
 from tempest import config
@@ -50,7 +48,6 @@ class ScenarioTest(tempest.test.BaseTestCase):
         cls.manager = clients.Manager(
             credentials=cls.credentials()
         )
-        cls.admin_manager = clients.Manager(cls.admin_credentials())
 
     @classmethod
     def setup_clients(cls):
@@ -63,7 +60,6 @@ class ScenarioTest(tempest.test.BaseTestCase):
         # Compute image client
         cls.images_client = cls.manager.images_client
         cls.keypairs_client = cls.manager.keypairs_client
-        cls.networks_client = cls.admin_manager.networks_client
         # Nova security groups client
         cls.security_groups_client = cls.manager.security_groups_client
         cls.servers_client = cls.manager.servers_client
@@ -542,6 +538,14 @@ class NetworkScenarioTest(ScenarioTest):
         super(NetworkScenarioTest, cls).skip_checks()
         if not CONF.service_available.neutron:
             raise cls.skipException('Neutron not available')
+        if not credentials.is_admin_available():
+            msg = ("Missing Identity Admin API credentials in configuration.")
+            raise cls.skipException(msg)
+
+    @classmethod
+    def setup_credentials(cls):
+        super(NetworkScenarioTest, cls).setup_credentials()
+        cls.admin_manager = clients.Manager(cls.admin_credentials())
 
     @classmethod
     def resource_setup(cls):
@@ -1283,9 +1287,17 @@ class EncryptionScenarioTest(ScenarioTest):
     """
 
     @classmethod
+    def skip_checks(cls):
+        super(EncryptionScenarioTest, cls).skip_checks()
+        if not credentials.is_admin_available():
+            msg = ("Missing Identity Admin API credentials in configuration.")
+            raise cls.skipException(msg)
+
+    @classmethod
     def setup_clients(cls):
         super(EncryptionScenarioTest, cls).setup_clients()
-        cls.admin_volume_types_client = cls.admin_manager.volume_types_client
+        admin_manager = clients.Manager(cls.admin_credentials())
+        cls.admin_volume_types_client = admin_manager.volume_types_client
 
     def _wait_for_volume_status(self, status):
         self.status_timeout(
