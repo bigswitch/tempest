@@ -86,6 +86,7 @@ resource file::
       owner: javelin
       flavor: m1.small
       image: javelin_cirros
+      floating_ip_pool: public
     - name: hoplite
       owner: javelin
       flavor: m1.medium
@@ -306,10 +307,10 @@ def _tenants_from_users(users):
     return tenants
 
 
-def _assign_swift_role(user):
+def _assign_swift_role(user, swift_role):
     admin = keystone_admin()
     roles = admin.identity.list_roles()
-    role = next(r for r in roles if r['name'] == 'Member')
+    role = next(r for r in roles if r['name'] == swift_role)
     LOG.debug(USERS[user])
     try:
         admin.identity.assign_user_role(
@@ -583,7 +584,8 @@ def create_objects(objects):
     LOG.info("Creating objects")
     for obj in objects:
         LOG.debug("Object %s" % obj)
-        _assign_swift_role(obj['owner'])
+        swift_role = obj.get('swift_role', 'Member')
+        _assign_swift_role(obj['owner'], swift_role)
         client = client_for_user(obj['owner'])
         client.containers.create_container(obj['container'])
         client.objects.create_object(
@@ -858,7 +860,9 @@ def create_servers(servers):
         for secgroup in server['secgroups']:
             client.servers.add_security_group(server_id, secgroup)
         if CONF.compute.use_floatingip_for_ssh:
-            floating_ip = client.floating_ips.create_floating_ip()
+            floating_ip_pool = server.get('floating_ip_pool')
+            floating_ip = client.floating_ips.create_floating_ip(
+                pool_name=floating_ip_pool)
             client.floating_ips.associate_floating_ip_to_server(
                 floating_ip['ip'], server_id)
 
@@ -992,9 +996,13 @@ def create_resources():
         add_router_interface(RES['routers'])
 
     create_secgroups(RES['secgroups'])
-    create_servers(RES['servers'])
     create_volumes(RES['volumes'])
-    attach_volumes(RES['volumes'])
+
+    # Only attempt attaching the volumes if servers are defined in the
+    # resourcefile
+    if 'servers' in RES:
+        create_servers(RES['servers'])
+        attach_volumes(RES['volumes'])
 
 
 def destroy_resources():
