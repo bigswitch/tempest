@@ -105,13 +105,11 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         self._test_reboot_server('HARD')
 
     @decorators.skip_because(bug="1014647")
-    @test.attr(type='smoke')
     @test.idempotent_id('4640e3ef-a5df-482e-95a1-ceeeb0faa84d')
     def test_reboot_server_soft(self):
         # The server should be signaled to reboot gracefully
         self._test_reboot_server('SOFT')
 
-    @test.attr(type='smoke')
     @test.idempotent_id('aaa6cdf3-55a7-461a-add9-1c8596b9a07c')
     def test_rebuild_server(self):
         # The server should be rebuilt using the provided image and data
@@ -127,6 +125,12 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
                                              metadata=meta,
                                              personality=personality,
                                              adminPass=password)
+
+        # If the server was rebuilt on a different image, restore it to the
+        # original image once the test ends
+        if self.image_ref_alt != self.image_ref:
+            self.addCleanup(self.client.rebuild,
+                            (self.server_id, self.image_ref))
 
         # Verify the properties in the initial response are correct
         self.assertEqual(self.server_id, rebuilt_server['id'])
@@ -146,8 +150,6 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
             linux_client = remote_client.RemoteClient(server, self.ssh_user,
                                                       password)
             linux_client.validate_authentication()
-        if self.image_ref_alt != self.image_ref:
-            self.client.rebuild(self.server_id, self.image_ref)
 
     @test.idempotent_id('30449a88-5aff-4f9b-9866-6ee9b17f906d')
     def test_rebuild_server_in_stop_state(self):
@@ -216,14 +218,12 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
     @test.idempotent_id('1499262a-9328-4eda-9068-db1ac57498d2')
     @testtools.skipUnless(CONF.compute_feature_enabled.resize,
                           'Resize not available.')
-    @test.attr(type='smoke')
     def test_resize_server_confirm(self):
         self._test_resize_server_confirm(stop=False)
 
     @test.idempotent_id('138b131d-66df-48c9-a171-64f45eb92962')
     @testtools.skipUnless(CONF.compute_feature_enabled.resize,
                           'Resize not available.')
-    @test.attr(type='smoke')
     def test_resize_server_confirm_from_stopped(self):
         self._test_resize_server_confirm(stop=True)
 
