@@ -267,7 +267,7 @@ class BaseTestCase(testtools.testcase.WithAttributes,
                      etype, cls.__name__))
             cls.tearDownClass()
             try:
-                raise etype, value, trace
+                six.reraise(etype, value, trace)
             finally:
                 del trace  # to avoid circular refs
 
@@ -305,7 +305,7 @@ class BaseTestCase(testtools.testcase.WithAttributes,
         # the first one
         if re_raise and etype is not None:
             try:
-                raise etype, value, trace
+                six.reraise(etype, value, trace)
             finally:
                 del trace  # to avoid circular refs
 
@@ -414,39 +414,80 @@ class BaseTestCase(testtools.testcase.WithAttributes,
                                                    format=self.log_format,
                                                    level=None))
 
-    @classmethod
-    def get_client_manager(cls, identity_version=None,
-                           credential_type='primary'):
-        """
-        Returns an OpenStack client manager
-        """
-        force_tenant_isolation = getattr(cls, 'force_tenant_isolation', None)
-        identity_version = identity_version or CONF.identity.auth_version
+    @property
+    def credentials_provider(self):
+        return self._get_credentials_provider()
 
-        if (not hasattr(cls, 'isolated_creds') or
-            not cls.isolated_creds.name == cls.__name__):
-            cls.isolated_creds = credentials.get_isolated_credentials(
+    @classmethod
+    def _get_credentials_provider(cls):
+        """Returns a credentials provider
+
+        If no credential provider exists yet creates one.
+        It uses self.identity_version if defined, or the configuration value
+        """
+        if (not hasattr(cls, '_creds_provider') or not cls._creds_provider or
+                not cls._creds_provider.name == cls.__name__):
+            force_tenant_isolation = getattr(cls, 'force_tenant_isolation',
+                                             False)
+            identity_version = getattr(cls, 'identity_version', None)
+            identity_version = identity_version or CONF.identity.auth_version
+
+            cls._creds_provider = credentials.get_isolated_credentials(
                 name=cls.__name__, network_resources=cls.network_resources,
                 force_tenant_isolation=force_tenant_isolation,
-                identity_version=identity_version
-            )
+                identity_version=identity_version)
+        return cls._creds_provider
 
-        credentials_method = 'get_%s_creds' % credential_type
-        if hasattr(cls.isolated_creds, credentials_method):
-            creds = getattr(cls.isolated_creds, credentials_method)()
+    @classmethod
+    def get_client_manager(cls, identity_version=None,
+                           credential_type=None, roles=None, force_new=None):
+        """Returns an OpenStack client manager
+
+        Returns an OpenStack client manager based on either credential_type
+        or a list of roles. If neither is specified, it defaults to
+        credential_type 'primary'
+        :param identity_version: string - v2 or v3
+        :param credential_type: string - primary, alt or admin
+        :param roles: list of roles
+
+        :returns the created client manager
+        :raises skipException: if the requested credentials are not available
+        """
+        if all([roles, credential_type]):
+            msg = "Cannot get credentials by type and roles at the same time"
+            raise ValueError(msg)
+        if not any([roles, credential_type]):
+            credential_type = 'primary'
+        cls.identity_version = identity_version
+        cred_provider = cls._get_credentials_provider()
+        if roles:
+            for role in roles:
+                if not cred_provider.is_role_available(role):
+                    skip_msg = (
+                        "%s skipped because the configured credential provider"
+                        " is not able to provide credentials with the %s role "
+                        "assigned." % (cls.__name__, role))
+                    raise cls.skipException(skip_msg)
+            params = dict(roles=roles)
+            if force_new is not None:
+                params.update(force_new=force_new)
+            creds = cred_provider.get_creds_by_roles(**params)
         else:
-            raise exceptions.InvalidCredentials(
-                "Invalid credentials type %s" % credential_type)
-        os = clients.Manager(credentials=creds, service=cls._service)
-        return os
+            credentials_method = 'get_%s_creds' % credential_type
+            if hasattr(cred_provider, credentials_method):
+                creds = getattr(cred_provider, credentials_method)()
+            else:
+                raise exceptions.InvalidCredentials(
+                    "Invalid credentials type %s" % credential_type)
+        return clients.Manager(credentials=creds, service=cls._service)
 
     @classmethod
     def clear_isolated_creds(cls):
         """
         Clears isolated creds if set
         """
-        if hasattr(cls, 'isolated_creds'):
-            cls.isolated_creds.clear_isolated_creds()
+        if hasattr(cls, '_cred_provider'):
+            cls._creds_provider.clear_isolated_creds()
 
     @classmethod
     def set_validation_resources(cls, keypair=None, floating_ip=None,
@@ -516,16 +557,16 @@ class BaseTestCase(testtools.testcase.WithAttributes,
         """
         # Make sure isolated_creds exists and get a network client
         networks_client = cls.get_client_manager().networks_client
-        isolated_creds = getattr(cls, 'isolated_creds', None)
+        cred_provider = cls._get_credentials_provider()
         # In case of nova network, isolated tenants are not able to list the
         # network configured in fixed_network_name, even if the can use it
         # for their servers, so using an admin network client to validate
         # the network name
         if (not CONF.service_available.neutron and
                 credentials.is_admin_available()):
-            admin_creds = isolated_creds.get_admin_creds()
+            admin_creds = cred_provider.get_admin_creds()
             networks_client = clients.Manager(admin_creds).networks_client
-        return fixed_network.get_tenant_network(isolated_creds,
+        return fixed_network.get_tenant_network(cred_provider,
                                                 networks_client)
 
     def assertEmpty(self, list, msg=None):
@@ -675,7 +716,7 @@ class NegativeAutoTest(BaseTestCase):
                 msg = ("Missing Identity Admin API credentials in"
                        "configuration.")
                 raise self.skipException(msg)
-            creds = self.isolated_creds.get_admin_creds()
+            creds = self.credentials_provider.get_admin_creds()
             os_adm = clients.Manager(credentials=creds)
             client = os_adm.negative_client
         else:
