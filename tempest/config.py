@@ -142,6 +142,9 @@ IdentityGroup = [
     cfg.StrOpt('admin_domain_name',
                help="Admin domain name for authentication (Keystone V3)."
                     "The same domain applies to user and project"),
+    cfg.StrOpt('default_domain_id',
+               default='default',
+               help="ID of the default domain"),
 ]
 
 identity_feature_group = cfg.OptGroup(name='identity-feature-enabled',
@@ -947,6 +950,8 @@ ScenarioGroup = [
     cfg.StrOpt('img_container_format',
                default='bare',
                help='Image container format'),
+    cfg.DictOpt('img_properties', help='Glance image properties. '
+                'Use for custom images which require them'),
     cfg.StrOpt('ami_img_file',
                default='cirros-0.3.1-x86_64-blank.img',
                help='AMI image file name'),
