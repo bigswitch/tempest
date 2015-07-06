@@ -26,11 +26,11 @@ from tempest.common import waiters
 from tempest import exceptions
 
 
-class ServersClientJSON(service_client.ServiceClient):
+class ServersClient(service_client.ServiceClient):
 
     def __init__(self, auth_provider, service, region,
                  enable_instance_password=True, **kwargs):
-        super(ServersClientJSON, self).__init__(
+        super(ServersClient, self).__init__(
             auth_provider, service, region, **kwargs)
         self.enable_instance_password = enable_instance_password
 
@@ -136,7 +136,7 @@ class ServersClientJSON(service_client.ServiceClient):
         self.validate_response(schema.update_server, resp, body)
         return service_client.ResponseBody(resp, body['server'])
 
-    def get_server(self, server_id):
+    def show_server(self, server_id):
         """Returns the details of an existing server."""
         resp, body = self.get("servers/%s" % server_id)
         body = json.loads(body)
@@ -186,7 +186,7 @@ class ServersClientJSON(service_client.ServiceClient):
         start_time = int(time.time())
         while True:
             try:
-                body = self.get_server(server_id)
+                body = self.show_server(server_id)
             except lib_exc.NotFound:
                 return
 
