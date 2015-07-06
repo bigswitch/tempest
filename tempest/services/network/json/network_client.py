@@ -85,31 +85,23 @@ class NetworkClientJSON(service_client.ServiceClient):
 
         return _list
 
-    def _deleter(self, resource_name):
-        def _delete(resource_id):
-            plural = self.pluralize(resource_name)
-            uri = '%s/%s' % (self.get_uri(plural), resource_id)
-            resp, body = self.delete(uri)
-            self.expected_success(204, resp.status)
-            return service_client.ResponseBody(resp, body)
+    def _delete_resource(self, uri):
+        req_uri = self.uri_prefix + uri
+        resp, body = self.delete(req_uri)
+        self.expected_success(204, resp.status)
+        return service_client.ResponseBody(resp, body)
 
-        return _delete
-
-    def _shower(self, resource_name):
-        def _show(resource_id, **fields):
-            # fields is a dict which key is 'fields' and value is a
-            # list of field's name. An example:
-            # {'fields': ['id', 'name']}
-            plural = self.pluralize(resource_name)
-            uri = '%s/%s' % (self.get_uri(plural), resource_id)
-            if fields:
-                uri += '?' + urllib.urlencode(fields, doseq=1)
-            resp, body = self.get(uri)
-            body = self.deserialize_single(body)
-            self.expected_success(200, resp.status)
-            return service_client.ResponseBody(resp, body)
-
-        return _show
+    def _show_resource(self, uri, **fields):
+        # fields is a dict which key is 'fields' and value is a
+        # list of field's name. An example:
+        # {'fields': ['id', 'name']}
+        req_uri = self.uri_prefix + uri
+        if fields:
+            req_uri += '?' + urllib.urlencode(fields, doseq=1)
+        resp, body = self.get(req_uri)
+        body = self.deserialize_single(body)
+        self.expected_success(200, resp.status)
+        return service_client.ResponseBody(resp, body)
 
     def _create_resource(self, uri, post_data):
         req_uri = self.uri_prefix + uri
@@ -119,24 +111,17 @@ class NetworkClientJSON(service_client.ServiceClient):
         self.expected_success(201, resp.status)
         return service_client.ResponseBody(resp, body)
 
-    def _updater(self, resource_name):
-        def _update(res_id, **kwargs):
-            plural = self.pluralize(resource_name)
-            uri = '%s/%s' % (self.get_uri(plural), res_id)
-            post_data = self.serialize({resource_name: kwargs})
-            resp, body = self.put(uri, post_data)
-            body = self.deserialize_single(body)
-            self.expected_success(200, resp.status)
-            return service_client.ResponseBody(resp, body)
-
-        return _update
+    def _update_resource(self, uri, post_data):
+        req_uri = self.uri_prefix + uri
+        req_post_data = self.serialize(post_data)
+        resp, body = self.put(req_uri, req_post_data)
+        body = self.deserialize_single(body)
+        self.expected_success(200, resp.status)
+        return service_client.ResponseBody(resp, body)
 
     def __getattr__(self, name):
-        method_prefixes = ["list_", "delete_", "show_", "update_"]
-        method_functors = [self._lister,
-                           self._deleter,
-                           self._shower,
-                           self._updater]
+        method_prefixes = ["list_"]
+        method_functors = [self._lister]
         for index, prefix in enumerate(method_prefixes):
             prefix_len = len(prefix)
             if name[:prefix_len] == prefix:
@@ -148,40 +133,133 @@ class NetworkClientJSON(service_client.ServiceClient):
         post_data = {'network': kwargs}
         return self._create_resource(uri, post_data)
 
+    def update_network(self, network_id, **kwargs):
+        uri = '/networks/%s' % network_id
+        post_data = {'network': kwargs}
+        return self._update_resource(uri, post_data)
+
+    def show_network(self, network_id, **fields):
+        uri = '/networks/%s' % network_id
+        return self._show_resource(uri, **fields)
+
+    def delete_network(self, network_id):
+        uri = '/networks/%s' % network_id
+        return self._delete_resource(uri)
+
     def create_subnet(self, **kwargs):
         uri = '/subnets'
         post_data = {'subnet': kwargs}
         return self._create_resource(uri, post_data)
+
+    def update_subnet(self, subnet_id, **kwargs):
+        uri = '/subnets/%s' % subnet_id
+        post_data = {'subnet': kwargs}
+        return self._update_resource(uri, post_data)
+
+    def show_subnet(self, subnet_id, **fields):
+        uri = '/subnets/%s' % subnet_id
+        return self._show_resource(uri, **fields)
+
+    def delete_subnet(self, subnet_id):
+        uri = '/subnets/%s' % subnet_id
+        return self._delete_resource(uri)
 
     def create_port(self, **kwargs):
         uri = '/ports'
         post_data = {'port': kwargs}
         return self._create_resource(uri, post_data)
 
+    def update_port(self, port_id, **kwargs):
+        uri = '/ports/%s' % port_id
+        post_data = {'port': kwargs}
+        return self._update_resource(uri, post_data)
+
+    def show_port(self, port_id, **fields):
+        uri = '/ports/%s' % port_id
+        return self._show_resource(uri, **fields)
+
+    def delete_port(self, port_id):
+        uri = '/ports/%s' % port_id
+        return self._delete_resource(uri)
+
     def create_floatingip(self, **kwargs):
         uri = '/floatingips'
         post_data = {'floatingip': kwargs}
         return self._create_resource(uri, post_data)
+
+    def update_floatingip(self, floatingip_id, **kwargs):
+        uri = '/floatingips/%s' % floatingip_id
+        post_data = {'floatingip': kwargs}
+        return self._update_resource(uri, post_data)
+
+    def show_floatingip(self, floatingip_id, **fields):
+        uri = '/floatingips/%s' % floatingip_id
+        return self._show_resource(uri, **fields)
+
+    def delete_floatingip(self, floatingip_id):
+        uri = '/floatingips/%s' % floatingip_id
+        return self._delete_resource(uri)
 
     def create_metering_label(self, **kwargs):
         uri = '/metering/metering-labels'
         post_data = {'metering_label': kwargs}
         return self._create_resource(uri, post_data)
 
+    def show_metering_label(self, metering_label_id, **fields):
+        uri = '/metering/metering-labels/%s' % metering_label_id
+        return self._show_resource(uri, **fields)
+
+    def delete_metering_label(self, metering_label_id):
+        uri = '/metering/metering-labels/%s' % metering_label_id
+        return self._delete_resource(uri)
+
     def create_metering_label_rule(self, **kwargs):
         uri = '/metering/metering-label-rules'
         post_data = {'metering_label_rule': kwargs}
         return self._create_resource(uri, post_data)
+
+    def show_metering_label_rule(self, metering_label_rule_id, **fields):
+        uri = '/metering/metering-label-rules/%s' % metering_label_rule_id
+        return self._show_resource(uri, **fields)
+
+    def delete_metering_label_rule(self, metering_label_rule_id):
+        uri = '/metering/metering-label-rules/%s' % metering_label_rule_id
+        return self._delete_resource(uri)
 
     def create_security_group(self, **kwargs):
         uri = '/security-groups'
         post_data = {'security_group': kwargs}
         return self._create_resource(uri, post_data)
 
+    def update_security_group(self, security_group_id, **kwargs):
+        uri = '/security-groups/%s' % security_group_id
+        post_data = {'security_group': kwargs}
+        return self._update_resource(uri, post_data)
+
+    def show_security_group(self, security_group_id, **fields):
+        uri = '/security-groups/%s' % security_group_id
+        return self._show_resource(uri, **fields)
+
+    def delete_security_group(self, security_group_id):
+        uri = '/security-groups/%s' % security_group_id
+        return self._delete_resource(uri)
+
     def create_security_group_rule(self, **kwargs):
         uri = '/security-group-rules'
         post_data = {'security_group_rule': kwargs}
         return self._create_resource(uri, post_data)
+
+    def show_security_group_rule(self, security_group_rule_id, **fields):
+        uri = '/security-group-rules/%s' % security_group_rule_id
+        return self._show_resource(uri, **fields)
+
+    def delete_security_group_rule(self, security_group_rule_id):
+        uri = '/security-group-rules/%s' % security_group_rule_id
+        return self._delete_resource(uri)
+
+    def show_extension(self, ext_alias, **fields):
+        uri = '/extensions/%s' % ext_alias
+        return self._show_resource(uri, **fields)
 
     # Common methods that are hard to automate
     def create_bulk_network(self, names):
@@ -303,6 +381,10 @@ class NetworkClientJSON(service_client.ServiceClient):
         self.expected_success(204, resp.status)
         return service_client.ResponseBody(resp, body)
 
+    def show_quotas(self, tenant_id, **fields):
+        uri = '/quotas/%s' % tenant_id
+        return self._show_resource(uri, **fields)
+
     def create_router(self, name, admin_state_up=True, **kwargs):
         post_body = {'router': kwargs}
         post_body['router']['name'] = name
@@ -351,6 +433,14 @@ class NetworkClientJSON(service_client.ServiceClient):
         # NOTE(salv-orlando): The above applies as long as Neutron's default
         # policy is to restrict enable_snat usage to admins only.
         return self._update_router(router_id, set_enable_snat=False, **kwargs)
+
+    def show_router(self, router_id, **fields):
+        uri = '/routers/%s' % router_id
+        return self._show_resource(uri, **fields)
+
+    def delete_router(self, router_id):
+        uri = '/routers/%s' % router_id
+        return self._delete_resource(uri)
 
     def update_router_with_snat_gw_info(self, router_id, **kwargs):
         """Update a router passing also the enable_snat attribute.
@@ -419,6 +509,10 @@ class NetworkClientJSON(service_client.ServiceClient):
         self.expected_success(200, resp.status)
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
+
+    def show_agent(self, agent_id, **fields):
+        uri = '/agents/%s' % agent_id
+        return self._show_resource(uri, **fields)
 
     def list_routers_on_l3_agent(self, agent_id):
         uri = '%s/agents/%s/l3-routers' % (self.uri_prefix, agent_id)
