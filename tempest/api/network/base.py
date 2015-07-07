@@ -15,10 +15,10 @@
 
 import netaddr
 from oslo_log import log as logging
-from tempest_lib.common.utils import data_utils
 from tempest_lib import exceptions as lib_exc
 import time
 
+from tempest.common.utils import data_utils
 from tempest import config
 from tempest import exceptions
 import tempest.test
