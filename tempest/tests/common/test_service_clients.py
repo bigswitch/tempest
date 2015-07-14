@@ -24,6 +24,8 @@ from tempest.services.compute.json import certificates_client
 from tempest.services.compute.json import extensions_client
 from tempest.services.compute.json import fixed_ips_client
 from tempest.services.compute.json import flavors_client
+from tempest.services.compute.json import floating_ip_pools_client
+from tempest.services.compute.json import floating_ips_bulk_client
 from tempest.services.compute.json import floating_ips_client
 from tempest.services.compute.json import hosts_client
 from tempest.services.compute.json import hypervisor_client
@@ -39,6 +41,7 @@ from tempest.services.compute.json import quotas_client
 from tempest.services.compute.json import security_group_default_rules_client \
     as nova_secgrop_default_client
 from tempest.services.compute.json import security_groups_client
+from tempest.services.compute.json import server_groups_client
 from tempest.services.compute.json import servers_client
 from tempest.services.compute.json import services_client
 from tempest.services.compute.json import tenant_usages_client
@@ -112,6 +115,8 @@ class TestServiceClient(base.TestCase):
             extensions_client.ExtensionsClient,
             fixed_ips_client.FixedIPsClient,
             flavors_client.FlavorsClient,
+            floating_ip_pools_client.FloatingIpPoolsClient,
+            floating_ips_bulk_client.FloatingIpsBulkClient,
             floating_ips_client.FloatingIPsClient,
             hosts_client.HostsClient,
             hypervisor_client.HypervisorClient,
@@ -126,6 +131,7 @@ class TestServiceClient(base.TestCase):
             quota_classes_client.QuotaClassesClient,
             nova_secgrop_default_client.SecurityGroupDefaultRulesClient,
             security_groups_client.SecurityGroupsClient,
+            server_groups_client.ServerGroupsClient,
             servers_client.ServersClient,
             services_client.ServicesClient,
             tenant_usages_client.TenantUsagesClient,

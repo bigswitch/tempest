@@ -1,4 +1,4 @@
-# Copyright 2013 IBM Corp
+# Copyright 2012 OpenStack Foundation
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,22 +15,21 @@
 
 import json
 
-from tempest.api_schema.response.compute.v2_1 import fixed_ips as schema
+from six.moves.urllib import parse as urllib
+
+from tempest.api_schema.response.compute.v2_1 import floating_ips as schema
 from tempest.common import service_client
 
 
-class FixedIPsClient(service_client.ServiceClient):
+class FloatingIpPoolsClient(service_client.ServiceClient):
 
-    def show_fixed_ip(self, fixed_ip):
-        url = "os-fixed-ips/%s" % fixed_ip
+    def list_floating_ip_pools(self, params=None):
+        """Returns a list of all floating IP Pools."""
+        url = 'os-floating-ip-pools'
+        if params:
+            url += '?%s' % urllib.urlencode(params)
+
         resp, body = self.get(url)
         body = json.loads(body)
-        self.validate_response(schema.get_fixed_ip, resp, body)
-        return service_client.ResponseBody(resp, body['fixed_ip'])
-
-    def reserve_fixed_ip(self, fixed_ip, body):
-        """This reserves and unreserves fixed ips."""
-        url = "os-fixed-ips/%s/action" % fixed_ip
-        resp, body = self.post(url, json.dumps(body))
-        self.validate_response(schema.reserve_fixed_ip, resp, body)
-        return service_client.ResponseBody(resp)
+        self.validate_response(schema.list_floating_ip_pools, resp, body)
+        return service_client.ResponseBodyList(resp, body['floating_ip_pools'])

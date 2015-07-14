@@ -41,6 +41,10 @@ from tempest.services.compute.json.extensions_client import \
     ExtensionsClient
 from tempest.services.compute.json.fixed_ips_client import FixedIPsClient
 from tempest.services.compute.json.flavors_client import FlavorsClient
+from tempest.services.compute.json.floating_ip_pools_client import \
+    FloatingIpPoolsClient
+from tempest.services.compute.json.floating_ips_bulk_client import \
+    FloatingIpsBulkClient
 from tempest.services.compute.json.floating_ips_client import \
     FloatingIPsClient
 from tempest.services.compute.json.hosts_client import HostsClient
@@ -63,6 +67,8 @@ from tempest.services.compute.json.security_group_default_rules_client import \
     SecurityGroupDefaultRulesClient
 from tempest.services.compute.json.security_groups_client import \
     SecurityGroupsClient
+from tempest.services.compute.json.server_groups_client import \
+    ServerGroupsClient
 from tempest.services.compute.json.servers_client import ServersClient
 from tempest.services.compute.json.services_client import ServicesClient
 from tempest.services.compute.json.tenant_networks_client import \
@@ -263,6 +269,8 @@ class Manager(manager.Manager):
             enable_instance_password=CONF.compute_feature_enabled
                 .enable_instance_password,
             **params)
+        self.server_groups_client = ServerGroupsClient(
+            self.auth_provider, **params)
         self.limits_client = LimitsClient(self.auth_provider, **params)
         self.images_client = ImagesClient(self.auth_provider, **params)
         self.keypairs_client = KeyPairsClient(self.auth_provider, **params)
@@ -272,6 +280,10 @@ class Manager(manager.Manager):
         self.flavors_client = FlavorsClient(self.auth_provider, **params)
         self.extensions_client = ExtensionsClient(self.auth_provider,
                                                   **params)
+        self.floating_ip_pools_client = FloatingIpPoolsClient(
+            self.auth_provider, **params)
+        self.floating_ips_bulk_client = FloatingIpsBulkClient(
+            self.auth_provider, **params)
         self.floating_ips_client = FloatingIPsClient(self.auth_provider,
                                                      **params)
         self.security_groups_client = SecurityGroupsClient(
