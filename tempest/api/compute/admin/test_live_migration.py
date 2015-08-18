@@ -56,9 +56,10 @@ class LiveBlockMigrationTestJSON(base.BaseV2ComputeAdminTest):
         return self._get_server_details(server_id)[self._host_key]
 
     def _migrate_server_to(self, server_id, dest_host):
+        bmflm = CONF.compute_feature_enabled.block_migration_for_live_migration
         body = self.admin_servers_client.live_migrate_server(
-            server_id, dest_host,
-            CONF.compute_feature_enabled.block_migration_for_live_migration)
+            server_id, host=dest_host, block_migration=bmflm,
+            disk_over_commit=False)
         return body
 
     def _get_host_other_than(self, host):
@@ -163,7 +164,7 @@ class LiveBlockMigrationTestJSON(base.BaseV2ComputeAdminTest):
         self.addCleanup(self._volume_clean_up, server_id, volume['id'])
 
         # Attach the volume to the server
-        self.servers_client.attach_volume(server_id, volume['id'],
+        self.servers_client.attach_volume(server_id, volumeId=volume['id'],
                                           device='/dev/xvdb')
         self.volumes_client.wait_for_volume_status(volume['id'], 'in-use')
 
