@@ -60,9 +60,10 @@ class FlavorsAccessTestJSON(base.BaseV2ComputeAdminTest):
                                                ram=self.ram, vcpus=self.vcpus,
                                                disk=self.disk,
                                                id=new_flavor_id,
-                                               is_public='False')
+                                               is_public='False')['flavor']
         self.addCleanup(self.client.delete_flavor, new_flavor['id'])
-        flavor_access = self.client.list_flavor_access(new_flavor_id)
+        flavor_access = (self.client.list_flavor_access(new_flavor_id)
+                         ['flavor_access'])
         self.assertEqual(len(flavor_access), 0, str(flavor_access))
 
     @test.idempotent_id('59e622f6-bdf6-45e3-8ba8-fedad905a6b4')
@@ -74,26 +75,28 @@ class FlavorsAccessTestJSON(base.BaseV2ComputeAdminTest):
                                                ram=self.ram, vcpus=self.vcpus,
                                                disk=self.disk,
                                                id=new_flavor_id,
-                                               is_public='False')
+                                               is_public='False')['flavor']
         self.addCleanup(self.client.delete_flavor, new_flavor['id'])
         # Add flavor access to a tenant.
         resp_body = {
             "tenant_id": str(self.tenant_id),
             "flavor_id": str(new_flavor['id']),
         }
-        add_body = \
-            self.client.add_flavor_access(new_flavor['id'], self.tenant_id)
+        add_body = (self.client.add_flavor_access(new_flavor['id'],
+                                                  self.tenant_id)
+                    ['flavor_access'])
         self.assertIn(resp_body, add_body)
 
         # The flavor is present in list.
-        flavors = self.flavors_client.list_flavors(detail=True)
+        flavors = self.flavors_client.list_flavors(detail=True)['flavors']
         self.assertIn(new_flavor['id'], map(lambda x: x['id'], flavors))
 
         # Remove flavor access from a tenant.
-        remove_body = \
-            self.client.remove_flavor_access(new_flavor['id'], self.tenant_id)
+        remove_body = (self.client.remove_flavor_access(new_flavor['id'],
+                                                        self.tenant_id)
+                       ['flavor_access'])
         self.assertNotIn(resp_body, remove_body)
 
         # The flavor is not present in list.
-        flavors = self.flavors_client.list_flavors(detail=True)
+        flavors = self.flavors_client.list_flavors(detail=True)['flavors']
         self.assertNotIn(new_flavor['id'], map(lambda x: x['id'], flavors))

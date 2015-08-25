@@ -221,16 +221,19 @@ class ServersClient(service_client.ServiceClient):
                                resp, body)
         return service_client.ResponseBody(resp, body)
 
-    def reboot(self, server_id, reboot_type):
+    def reboot_server(self, server_id, reboot_type):
         """Reboots a server."""
         return self.action(server_id, 'reboot', None, type=reboot_type)
 
-    def rebuild(self, server_id, image_ref, **kwargs):
-        """Rebuilds a server with a new image."""
+    def rebuild_server(self, server_id, image_ref, **kwargs):
+        """Rebuilds a server with a new image.
+        Most parameters except the following are passed to the API without
+        any changes.
+        :param disk_config: The name is changed to OS-DCF:diskConfig
+        """
         kwargs['imageRef'] = image_ref
         if 'disk_config' in kwargs:
-            kwargs['OS-DCF:diskConfig'] = kwargs['disk_config']
-            del kwargs['disk_config']
+            kwargs['OS-DCF:diskConfig'] = kwargs.pop('disk_config')
         if self.enable_instance_password:
             rebuild_schema = schema.rebuild_server_with_admin_pass
         else:
@@ -238,12 +241,15 @@ class ServersClient(service_client.ServiceClient):
         return self.action(server_id, 'rebuild', 'server',
                            rebuild_schema, **kwargs)
 
-    def resize(self, server_id, flavor_ref, **kwargs):
-        """Changes the flavor of a server."""
+    def resize_server(self, server_id, flavor_ref, **kwargs):
+        """Changes the flavor of a server.
+        Most parameters except the following are passed to the API without
+        any changes.
+        :param disk_config: The name is changed to OS-DCF:diskConfig
+        """
         kwargs['flavorRef'] = flavor_ref
         if 'disk_config' in kwargs:
-            kwargs['OS-DCF:diskConfig'] = kwargs['disk_config']
-            del kwargs['disk_config']
+            kwargs['OS-DCF:diskConfig'] = kwargs.pop('disk_config')
         return self.action(server_id, 'resize', None, **kwargs)
 
     def confirm_resize(self, server_id, **kwargs):

@@ -226,7 +226,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
         _client = self.security_groups_client
         _client_rules = self.security_group_rules_client
         if secgroup_id is None:
-            sgs = _client.list_security_groups()
+            sgs = _client.list_security_groups()['security_groups']
             for sg in sgs:
                 if sg['name'] == 'default':
                     secgroup_id = sg['id']
@@ -254,7 +254,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
         rules = list()
         for ruleset in rulesets:
             sg_rule = _client_rules.create_security_group_rule(
-                parent_group_id=secgroup_id, **ruleset)
+                parent_group_id=secgroup_id, **ruleset)['security_group_rule']
             self.addCleanup(self.delete_wrapper,
                             _client_rules.delete_security_group_rule,
                             sg_rule['id'])
@@ -266,7 +266,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
         sg_name = data_utils.rand_name(self.__class__.__name__)
         sg_desc = sg_name + " description"
         secgroup = self.security_groups_client.create_security_group(
-            name=sg_name, description=sg_desc)
+            name=sg_name, description=sg_desc)['security_group']
         self.assertEqual(secgroup['name'], sg_name)
         self.assertEqual(secgroup['description'], sg_desc)
         self.addCleanup(self.delete_wrapper,
@@ -449,9 +449,10 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
         LOG.debug("Rebuilding server (id: %s, image: %s, preserve eph: %s)",
                   server_id, image, preserve_ephemeral)
-        self.servers_client.rebuild(server_id=server_id, image_ref=image,
-                                    preserve_ephemeral=preserve_ephemeral,
-                                    **rebuild_kwargs)
+        self.servers_client.rebuild_server(
+            server_id=server_id, image_ref=image,
+            preserve_ephemeral=preserve_ephemeral,
+            **rebuild_kwargs)
         if wait:
             waiters.wait_for_server_status(self.servers_client,
                                            server_id, 'ACTIVE')
