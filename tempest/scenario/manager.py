@@ -521,7 +521,8 @@ class ScenarioTest(tempest.test.BaseTestCase):
         Nova clients
         """
 
-        floating_ip = self.floating_ips_client.create_floating_ip(pool_name)
+        floating_ip = (self.floating_ips_client.create_floating_ip(pool_name)
+                       ['floating_ip'])
         self.addCleanup(self.delete_wrapper,
                         self.floating_ips_client.delete_floating_ip,
                         floating_ip['id'])
@@ -1286,7 +1287,7 @@ class EncryptionScenarioTest(ScenarioTest):
         randomized_name = data_utils.rand_name('scenario-type-' + name)
         LOG.debug("Creating a volume type: %s", randomized_name)
         body = client.create_volume_type(
-            randomized_name)
+            randomized_name)['volume_type']
         self.assertIn('id', body)
         self.addCleanup(client.delete_volume_type, body['id'])
         return body
@@ -1302,7 +1303,7 @@ class EncryptionScenarioTest(ScenarioTest):
         LOG.debug("Creating an encryption type for volume type: %s", type_id)
         client.create_encryption_type(
             type_id, provider=provider, key_size=key_size, cipher=cipher,
-            control_location=control_location)
+            control_location=control_location)['encryption']
 
 
 class NetworkScenarioTest(OfficialClientTest):
