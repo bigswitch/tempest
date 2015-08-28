@@ -163,9 +163,6 @@ class TestSecurityGroupsBasicOps(manager.NetworkScenarioTest):
         # work-around for broken probe port
         cls.floating_ip_access = False
 
-    def cleanup_wrapper(self, resource):
-        self.cleanup_resource(resource, self.__class__.__name__)
-
     def setUp(self):
         super(TestSecurityGroupsBasicOps, self).setUp()
         self._deploy_tenant(self.primary_tenant)
