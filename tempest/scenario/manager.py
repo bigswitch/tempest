@@ -1343,6 +1343,7 @@ class EncryptionScenarioTest(ScenarioTest):
             control_location=control_location)['encryption']
 
 
+<<<<<<< HEAD
 class NetworkScenarioTest(OfficialClientTest):
     """
     Base class for network scenario tests
@@ -1940,9 +1941,9 @@ class OrchestrationScenarioTest(ScenarioTest):
                     if o['output_key'] == output_key), None)
 
 
-class SwiftScenarioTest(ScenarioTest):
+class ObjectStorageScenarioTest(ScenarioTest):
     """
-    Provide harness to do Swift scenario tests.
+    Provide harness to do Object Storage scenario tests.
 
     Subclasses implement the tests that use the methods provided by this
     class.
@@ -1950,7 +1951,7 @@ class SwiftScenarioTest(ScenarioTest):
 
     @classmethod
     def skip_checks(cls):
-        super(SwiftScenarioTest, cls).skip_checks()
+        super(ObjectStorageScenarioTest, cls).skip_checks()
         if not CONF.service_available.swift:
             skip_msg = ("%s skipped as swift is not available" %
                         cls.__name__)
@@ -1959,13 +1960,13 @@ class SwiftScenarioTest(ScenarioTest):
     @classmethod
     def setup_credentials(cls):
         cls.set_network_resources()
-        super(SwiftScenarioTest, cls).setup_credentials()
+        super(ObjectStorageScenarioTest, cls).setup_credentials()
         operator_role = CONF.object_storage.operator_role
         cls.os_operator = cls.get_client_manager(roles=[operator_role])
 
     @classmethod
     def setup_clients(cls):
-        super(SwiftScenarioTest, cls).setup_clients()
+        super(ObjectStorageScenarioTest, cls).setup_clients()
         # Clients for Swift
         cls.account_client = cls.os_operator.account_client
         cls.container_client = cls.os_operator.container_client
