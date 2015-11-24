@@ -35,6 +35,7 @@ from tempest_lib.services.compute.floating_ips_bulk_client import \
 from tempest_lib.services.compute.hosts_client import HostsClient
 from tempest_lib.services.compute.hypervisor_client import \
     HypervisorClient
+from tempest_lib.services.compute.images_client import ImagesClient
 from tempest_lib.services.identity.v2.token_client import TokenClient
 from tempest_lib.services.identity.v3.token_client import V3TokenClient
 
@@ -47,7 +48,6 @@ from tempest.services.baremetal.v1.json.baremetal_client import \
 from tempest.services import botoclients
 from tempest.services.compute.json.floating_ips_client import \
     FloatingIPsClient as ComputeFloatingIPsClient
-from tempest.services.compute.json.images_client import ImagesClient
 from tempest.services.compute.json.instance_usage_audit_log_client import \
     InstanceUsagesAuditLogClient
 from tempest.services.compute.json.interfaces_client import \
@@ -94,6 +94,7 @@ from tempest.services.identity.v3.json.credentials_client import \
     CredentialsClient
 from tempest.services.identity.v3.json.endpoints_client import \
     EndPointClient
+from tempest.services.identity.v3.json.groups_client import GroupsClient
 from tempest.services.identity.v3.json.identity_client import \
     IdentityV3Client
 from tempest.services.identity.v3.json.policy_client import PolicyClient
@@ -408,6 +409,7 @@ class Manager(manager.Manager):
         self.region_client = RegionClient(self.auth_provider, **params)
         self.credentials_client = CredentialsClient(self.auth_provider,
                                                     **params)
+        self.groups_client = GroupsClient(self.auth_provider, **params_v3)
         # Token clients do not use the catalog. They only need default_params.
         # They read auth_url, so they should only be set if the corresponding
         # API version is marked as enabled

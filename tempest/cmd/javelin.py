@@ -120,6 +120,7 @@ from tempest_lib import exceptions as lib_exc
 from tempest_lib.services.compute import flavors_client
 import yaml
 
+from tempest.common import identity
 from tempest.common import waiters
 from tempest import config
 from tempest.services.compute.json import floating_ips_client
@@ -295,7 +296,7 @@ def create_tenants(tenants):
 def destroy_tenants(tenants):
     admin = keystone_admin()
     for tenant in tenants:
-        tenant_id = admin.identity.get_tenant_by_name(tenant)['id']
+        tenant_id = identity.get_tenant_by_name(admin.identity, tenant)['id']
         admin.identity.delete_tenant(tenant_id)
 
 ##############
@@ -347,12 +348,13 @@ def create_users(users):
     admin = keystone_admin()
     for u in users:
         try:
-            tenant = admin.identity.get_tenant_by_name(u['tenant'])
+            tenant = identity.get_tenant_by_name(admin.identity, u['tenant'])
         except lib_exc.NotFound:
             LOG.error("Tenant: %s - not found" % u['tenant'])
             continue
         try:
-            admin.identity.get_user_by_username(tenant['id'], u['name'])
+            identity.get_user_by_username(admin.identity,
+                                          tenant['id'], u['name'])
             LOG.warn("User '%s' already exists in this environment"
                      % u['name'])
         except lib_exc.NotFound:
@@ -365,9 +367,10 @@ def create_users(users):
 def destroy_users(users):
     admin = keystone_admin()
     for user in users:
-        tenant_id = admin.identity.get_tenant_by_name(user['tenant'])['id']
-        user_id = admin.identity.get_user_by_username(tenant_id,
-                                                      user['name'])['id']
+        tenant_id = identity.get_tenant_by_name(admin.identity,
+                                                user['tenant'])['id']
+        user_id = identity.get_user_by_username(admin.identity,
+                                                tenant_id, user['name'])['id']
         admin.identity.delete_user(user_id)
 
 
@@ -376,10 +379,11 @@ def collect_users(users):
     LOG.info("Collecting users")
     admin = keystone_admin()
     for u in users:
-        tenant = admin.identity.get_tenant_by_name(u['tenant'])
+        tenant = identity.get_tenant_by_name(admin.identity, u['tenant'])
         u['tenant_id'] = tenant['id']
         USERS[u['name']] = u
-        body = admin.identity.get_user_by_username(tenant['id'], u['name'])
+        body = identity.get_user_by_username(admin.identity,
+                                             tenant['id'], u['name'])
         USERS[u['name']]['id'] = body['id']
 
 
