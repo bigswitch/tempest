@@ -36,6 +36,9 @@ from tempest_lib.services.compute.hosts_client import HostsClient
 from tempest_lib.services.compute.hypervisor_client import \
     HypervisorClient
 from tempest_lib.services.compute.images_client import ImagesClient
+from tempest_lib.services.compute.instance_usage_audit_log_client import \
+    InstanceUsagesAuditLogClient
+from tempest_lib.services.compute.limits_client import LimitsClient
 from tempest_lib.services.identity.v2.token_client import TokenClient
 from tempest_lib.services.identity.v3.token_client import V3TokenClient
 
@@ -48,12 +51,9 @@ from tempest.services.baremetal.v1.json.baremetal_client import \
 from tempest.services import botoclients
 from tempest.services.compute.json.floating_ips_client import \
     FloatingIPsClient as ComputeFloatingIPsClient
-from tempest.services.compute.json.instance_usage_audit_log_client import \
-    InstanceUsagesAuditLogClient
 from tempest.services.compute.json.interfaces_client import \
     InterfacesClient
 from tempest.services.compute.json.keypairs_client import KeyPairsClient
-from tempest.services.compute.json.limits_client import LimitsClient
 from tempest.services.compute.json.migrations_client import \
     MigrationsClient
 from tempest.services.compute.json.networks_client import NetworksClient \
@@ -115,6 +115,7 @@ from tempest.services.object_storage.container_client import ContainerClient
 from tempest.services.object_storage.object_client import ObjectClient
 from tempest.services.orchestration.json.orchestration_client import \
     OrchestrationClient
+from tempest.services.telemetry.json.alarming_client import AlarmingClient
 from tempest.services.telemetry.json.telemetry_client import \
     TelemetryClient
 from tempest.services.volume.json.admin.volume_hosts_client import \
@@ -239,6 +240,13 @@ class Manager(manager.Manager):
                 CONF.telemetry.catalog_type,
                 CONF.identity.region,
                 endpoint_type=CONF.telemetry.endpoint_type,
+                **self.default_params_with_timeout_values)
+        if CONF.service_available.aodh:
+            self.alarming_client = AlarmingClient(
+                self.auth_provider,
+                CONF.alarming.catalog_type,
+                CONF.identity.region,
+                endpoint_type=CONF.alarming.endpoint_type,
                 **self.default_params_with_timeout_values)
         if CONF.service_available.glance:
             self.image_client = ImageClient(
