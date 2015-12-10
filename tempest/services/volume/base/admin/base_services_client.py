@@ -19,9 +19,9 @@ from six.moves.urllib import parse as urllib
 from tempest.common import service_client
 
 
-class BaseVolumesServicesClient(service_client.ServiceClient):
+class BaseServicesClient(service_client.ServiceClient):
 
-    def list_services(self, params=None):
+    def list_services(self, **params):
         url = 'os-services'
         if params:
             url += '?%s' % urllib.urlencode(params)
