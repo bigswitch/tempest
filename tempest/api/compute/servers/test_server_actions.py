@@ -104,7 +104,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
                 self.validation_resources['keypair']['private_key'])
             boot_time = linux_client.get_boot_time()
 
-        self.client.reboot_server(self.server_id, reboot_type)
+        self.client.reboot_server(self.server_id, type=reboot_type)
         waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
 
         if CONF.validation.run_validation:
@@ -356,7 +356,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
 
     def _get_output(self):
         output = self.client.get_console_output(
-            self.server_id, 10)['output']
+            self.server_id, length=10)['output']
         self.assertTrue(output, "Console output was empty.")
         lines = len(output.split('\n'))
         self.assertEqual(lines, 10)
@@ -373,7 +373,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         # log file is truncated and we cannot get any console log through
         # "console-log" API.
         # The detail is https://bugs.launchpad.net/nova/+bug/1251920
-        self.client.reboot_server(self.server_id, 'HARD')
+        self.client.reboot_server(self.server_id, type='HARD')
         waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
         self.wait_for(self._get_output)
 
@@ -384,8 +384,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         server = self.create_test_server(wait_until='ACTIVE')
 
         def _check_full_length_console_log():
-            output = self.client.get_console_output(server['id'],
-                                                    None)['output']
+            output = self.client.get_console_output(server['id'])['output']
             self.assertTrue(output, "Console output was empty.")
             lines = len(output.split('\n'))
 
@@ -499,7 +498,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         console_types = ['novnc', 'xvpvnc']
         for console_type in console_types:
             body = self.client.get_vnc_console(self.server_id,
-                                               console_type)['console']
+                                               type=console_type)['console']
             self.assertEqual(console_type, body['type'])
             self.assertNotEqual('', body['url'])
             self._validate_url(body['url'])
