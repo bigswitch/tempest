@@ -240,15 +240,18 @@ class NetworkClient(base.BaseNetworkClient):
         uri = '/ports?device_id=%s' % uuid
         return self.list_resources(uri)
 
-    def update_agent(self, agent_id, agent_info):
+    def update_agent(self, agent_id, **kwargs):
         """Update agent
 
         :param agent_info: Agent update information.
         E.g {"admin_state_up": True}
         """
+        # TODO(piyush): Current api-site doesn't contain this API description.
+        # After fixing the api-site, we need to fix here also for putting the
+        # link to api-site.
+        # LP: https://bugs.launchpad.net/openstack-api-site/+bug/1526673
         uri = '/agents/%s' % agent_id
-        agent = {"agent": agent_info}
-        return self.update_resource(uri, agent)
+        return self.update_resource(uri, kwargs)
 
     def show_agent(self, agent_id, **fields):
         uri = '/agents/%s' % agent_id
@@ -270,6 +273,7 @@ class NetworkClient(base.BaseNetworkClient):
         # TODO(piyush): Current api-site doesn't contain this API description.
         # After fixing the api-site, we need to fix here also for putting the
         # link to api-site.
+        # LP: https://bugs.launchpad.net/openstack-api-site/+bug/1526670
         uri = '/agents/%s/l3-routers' % agent_id
         return self.create_resource(uri, kwargs)
 
@@ -290,13 +294,14 @@ class NetworkClient(base.BaseNetworkClient):
                                                network_id)
         return self.delete_resource(uri)
 
-    def update_extra_routes(self, router_id, routes):
+    def update_extra_routes(self, router_id, **kwargs):
+        """Update Extra routes.
+
+        Available params: see http://developer.openstack.org/
+                              api-ref-networking-v2-ext.html#updateExtraRoutes
+        """
         uri = '/routers/%s' % router_id
-        put_body = {
-            'router': {
-                'routes': routes
-            }
-        }
+        put_body = {'router': kwargs}
         return self.update_resource(uri, put_body)
 
     def delete_extra_routes(self, router_id):
