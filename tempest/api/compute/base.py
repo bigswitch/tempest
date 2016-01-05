@@ -55,6 +55,13 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
     @classmethod
     def setup_credentials(cls):
         cls.set_network_resources()
+        cls.request_microversion = (
+            api_version_utils.select_request_microversion(
+                cls.min_microversion,
+                CONF.compute_feature_enabled.min_microversion))
+        if cls.request_microversion:
+            cls.services_microversion = {
+                CONF.compute.catalog_type: cls.request_microversion}
         super(BaseV2ComputeTest, cls).setup_credentials()
 
     @classmethod
@@ -278,8 +285,8 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
             # into the delete_volume method as a convenience to the caller.
             volumes_client.wait_for_resource_deletion(volume_id)
         except lib_exc.NotFound:
-            LOG.warn("Unable to delete volume '%s' since it was not found. "
-                     "Maybe it was already deleted?" % volume_id)
+            LOG.warning("Unable to delete volume '%s' since it was not found. "
+                        "Maybe it was already deleted?" % volume_id)
 
     @classmethod
     def prepare_instance_network(cls):
