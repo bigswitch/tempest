@@ -260,9 +260,13 @@ class ScenarioTest(tempest.test.BaseTestCase):
                       imageRef=None, volume_type=None, wait_on_delete=True):
         if name is None:
             name = data_utils.rand_name(self.__class__.__name__)
-        volume = self.volumes_client.create_volume(
-            size=size, display_name=name, snapshot_id=snapshot_id,
-            imageRef=imageRef, volume_type=volume_type)['volume']
+        kwargs = {'display_name': name,
+                  'snapshot_id': snapshot_id,
+                  'imageRef': imageRef,
+                  'volume_type': volume_type}
+        if size is not None:
+            kwargs.update({'size': size})
+        volume = self.volumes_client.create_volume(**kwargs)['volume']
 
         if wait_on_delete:
             self.addCleanup(self.volumes_client.wait_for_resource_deletion,
@@ -344,17 +348,13 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
         return secgroup
 
-    def get_remote_client(self, server_or_ip, username=None, private_key=None,
-                          log_console_of_servers=None):
+    def get_remote_client(self, server_or_ip, username=None, private_key=None):
         """Get a SSH client to a remote server
 
         @param server_or_ip a server object as returned by Tempest compute
             client or an IP address to connect to
         @param username name of the Linux account on the remote server
         @param private_key the SSH private key to use
-        @param log_console_of_servers a list of server objects. Each server
-            in the list will have its console printed in the logs in case the
-            SSH connection failed to be established
         @return a RemoteClient object
         """
         if isinstance(server_or_ip, six.string_types):
@@ -391,10 +391,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
             if caller:
                 message = '(%s) %s' % (caller, message)
             LOG.exception(message)
-            # If we don't explicitly set for which servers we want to
-            # log the console output then all the servers will be logged.
-            # See the definition of _log_console_output()
-            self._log_console_output(log_console_of_servers)
+            self._log_console_output()
             raise
 
         return linux_client
