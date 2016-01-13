@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 from tempest_lib import exceptions as lib_exc
 
 from tempest.common import compute
@@ -23,8 +22,6 @@ from tempest import exceptions
 import tempest.test
 
 CONF = config.CONF
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseVolumeTest(tempest.test.BaseTestCase):
@@ -123,7 +120,7 @@ class BaseVolumeTest(tempest.test.BaseTestCase):
     def create_snapshot(cls, volume_id=1, **kwargs):
         """Wrapper utility that returns a test snapshot."""
         snapshot = cls.snapshots_client.create_snapshot(
-            volume_id, **kwargs)['snapshot']
+            volume_id=volume_id, **kwargs)['snapshot']
         cls.snapshots.append(snapshot)
         cls.snapshots_client.wait_for_snapshot_status(snapshot['id'],
                                                       'available')
