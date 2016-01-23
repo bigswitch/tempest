@@ -98,6 +98,8 @@ from tempest.services.identity.v2.json.identity_client import \
     IdentityClient
 from tempest.services.identity.v2.json.roles_client import \
     RolesClient
+from tempest.services.identity.v2.json.services_client import \
+    ServicesClient as ServicesV2Client
 from tempest.services.identity.v2.json.tenants_client import \
     TenantsClient
 from tempest.services.identity.v2.json.users_client import \
@@ -124,6 +126,8 @@ from tempest.services.network.json.agents_client import AgentsClient \
 from tempest.services.network.json.network_client import NetworkClient
 from tempest.services.network.json.quotas_client import QuotasClient \
     as NetworkQuotasClient
+from tempest.services.network.json.security_group_rules_client import \
+    SecurityGroupRulesClient
 from tempest.services.network.json.security_groups_client import \
     SecurityGroupsClient
 from tempest.services.network.json.subnetpools_client import SubnetpoolsClient
@@ -310,6 +314,14 @@ class Manager(manager.Manager):
             build_interval=CONF.network.build_interval,
             build_timeout=CONF.network.build_timeout,
             **self.default_params)
+        self.security_group_rules_client = SecurityGroupRulesClient(
+            self.auth_provider,
+            CONF.network.catalog_type,
+            CONF.network.region or CONF.identity.region,
+            endpoint_type=CONF.network.endpoint_type,
+            build_interval=CONF.network.build_interval,
+            build_timeout=CONF.network.build_timeout,
+            **self.default_params)
         self.security_groups_client = SecurityGroupsClient(
             self.auth_provider,
             CONF.network.catalog_type,
@@ -488,6 +500,8 @@ class Manager(manager.Manager):
                                         **params_v2_admin)
         self.users_client = UsersClient(self.auth_provider,
                                         **params_v2_admin)
+        self.services_v2_client = ServicesV2Client(self.auth_provider,
+                                                   **params_v2_admin)
         params_v2_public = params.copy()
         params_v2_public['endpoint_type'] = (
             CONF.identity.v2_public_endpoint_type)
