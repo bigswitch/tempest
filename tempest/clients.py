@@ -85,6 +85,7 @@ from tempest_lib.services.network.quotas_client import QuotasClient \
     as NetworkQuotasClient
 from tempest_lib.services.network.security_groups_client import \
     SecurityGroupsClient
+from tempest_lib.services.network.subnetpools_client import SubnetpoolsClient
 from tempest_lib.services.network.subnets_client import SubnetsClient
 
 from tempest.common import negative_rest_client
@@ -128,6 +129,7 @@ from tempest.services.identity.v3.json.regions_client import \
     RegionsClient as RegionsV3Client
 from tempest.services.identity.v3.json.services_client import \
     ServicesClient as IdentityServicesV3Client
+from tempest.services.identity.v3.json.users_clients import UsersV3Client
 from tempest.services.image.v1.json.images_client import ImagesClient
 from tempest.services.image.v2.json.images_client import ImagesClientV2
 from tempest.services.messaging.json.messaging_client import \
@@ -135,7 +137,6 @@ from tempest.services.messaging.json.messaging_client import \
 from tempest.services.network.json.network_client import NetworkClient
 from tempest.services.network.json.security_group_rules_client import \
     SecurityGroupRulesClient
-from tempest.services.network.json.subnetpools_client import SubnetpoolsClient
 from tempest.services.object_storage.account_client import AccountClient
 from tempest.services.object_storage.container_client import ContainerClient
 from tempest.services.object_storage.object_client import ObjectClient
@@ -535,6 +536,7 @@ class Manager(manager.Manager):
         params_v3['endpoint_type'] = CONF.identity.v3_endpoint_type
         self.identity_v3_client = IdentityV3Client(self.auth_provider,
                                                    **params_v3)
+        self.users_v3_client = UsersV3Client(self.auth_provider, **params_v3)
         self.endpoints_client = EndPointV3Client(self.auth_provider,
                                                  **params_v3)
         self.identity_services_client = IdentityServicesV3Client(
