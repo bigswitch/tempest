@@ -117,6 +117,7 @@ from tempest.services.identity.v2.json.users_client import \
     UsersClient
 from tempest.services.identity.v3.json.credentials_client import \
     CredentialsClient as CredentialsV3Client
+from tempest.services.identity.v3.json.domains_client import DomainsClient
 from tempest.services.identity.v3.json.endpoints_client import \
     EndPointClient as EndPointV3Client
 from tempest.services.identity.v3.json.groups_client import \
@@ -129,6 +130,7 @@ from tempest.services.identity.v3.json.regions_client import \
     RegionsClient as RegionsV3Client
 from tempest.services.identity.v3.json.services_client import \
     ServicesClient as IdentityServicesV3Client
+from tempest.services.identity.v3.json.trusts_client import TrustsClient
 from tempest.services.identity.v3.json.users_clients import UsersV3Client
 from tempest.services.image.v1.json.images_client import ImagesClient
 from tempest.services.image.v2.json.images_client import ImagesClientV2
@@ -509,8 +511,11 @@ class Manager(manager.Manager):
         # Clients below use the endpoint type of Keystone API v3
         params_v3 = params.copy()
         params_v3['endpoint_type'] = CONF.identity.v3_endpoint_type
+        self.domains_client = DomainsClient(self.auth_provider,
+                                            **params_v3)
         self.identity_v3_client = IdentityV3Client(self.auth_provider,
                                                    **params_v3)
+        self.trusts_client = TrustsClient(self.auth_provider, **params_v3)
         self.users_v3_client = UsersV3Client(self.auth_provider, **params_v3)
         self.endpoints_client = EndPointV3Client(self.auth_provider,
                                                  **params_v3)

@@ -14,7 +14,6 @@
 #    under the License.
 
 from oslo_serialization import jsonutils as json
-from six.moves.urllib import parse as urllib
 
 from tempest.common import service_client
 
@@ -72,61 +71,6 @@ class IdentityV3Client(service_client.ServiceClient):
         """Delete a role."""
         resp, body = self.delete('roles/%s' % str(role_id))
         self.expected_success(204, resp.status)
-        return service_client.ResponseBody(resp, body)
-
-    def create_domain(self, name, **kwargs):
-        """Creates a domain."""
-        description = kwargs.get('description', None)
-        en = kwargs.get('enabled', True)
-        post_body = {
-            'description': description,
-            'enabled': en,
-            'name': name
-        }
-        post_body = json.dumps({'domain': post_body})
-        resp, body = self.post('domains', post_body)
-        self.expected_success(201, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def delete_domain(self, domain_id):
-        """Delete a domain."""
-        resp, body = self.delete('domains/%s' % str(domain_id))
-        self.expected_success(204, resp.status)
-        return service_client.ResponseBody(resp, body)
-
-    def list_domains(self, params=None):
-        """List Domains."""
-        url = 'domains'
-        if params:
-            url += '?%s' % urllib.urlencode(params)
-        resp, body = self.get(url)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def update_domain(self, domain_id, **kwargs):
-        """Updates a domain."""
-        body = self.show_domain(domain_id)['domain']
-        description = kwargs.get('description', body['description'])
-        en = kwargs.get('enabled', body['enabled'])
-        name = kwargs.get('name', body['name'])
-        post_body = {
-            'description': description,
-            'enabled': en,
-            'name': name
-        }
-        post_body = json.dumps({'domain': post_body})
-        resp, body = self.patch('domains/%s' % domain_id, post_body)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def show_domain(self, domain_id):
-        """Get Domain details."""
-        resp, body = self.get('domains/%s' % domain_id)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
         return service_client.ResponseBody(resp, body)
 
     def show_token(self, resp_token):
@@ -263,64 +207,3 @@ class IdentityV3Client(service_client.ServiceClient):
                                (domain_id, group_id, role_id))
         self.expected_success(204, resp.status)
         return service_client.ResponseBody(resp)
-
-    def create_trust(self, **kwargs):
-        """Creates a trust.
-
-        Available params: see http://developer.openstack.org/
-                              api-ref-identity-v3-ext.html#createTrust
-        """
-        post_body = json.dumps({'trust': kwargs})
-        resp, body = self.post('OS-TRUST/trusts', post_body)
-        self.expected_success(201, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def delete_trust(self, trust_id):
-        """Deletes a trust."""
-        resp, body = self.delete("OS-TRUST/trusts/%s" % trust_id)
-        self.expected_success(204, resp.status)
-        return service_client.ResponseBody(resp, body)
-
-    def list_trusts(self, trustor_user_id=None, trustee_user_id=None):
-        """GET trusts."""
-        if trustor_user_id:
-            resp, body = self.get("OS-TRUST/trusts?trustor_user_id=%s"
-                                  % trustor_user_id)
-        elif trustee_user_id:
-            resp, body = self.get("OS-TRUST/trusts?trustee_user_id=%s"
-                                  % trustee_user_id)
-        else:
-            resp, body = self.get("OS-TRUST/trusts")
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def show_trust(self, trust_id):
-        """GET trust."""
-        resp, body = self.get("OS-TRUST/trusts/%s" % trust_id)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def list_trust_roles(self, trust_id):
-        """GET roles delegated by a trust."""
-        resp, body = self.get("OS-TRUST/trusts/%s/roles" % trust_id)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def show_trust_role(self, trust_id, role_id):
-        """GET role delegated by a trust."""
-        resp, body = self.get("OS-TRUST/trusts/%s/roles/%s"
-                              % (trust_id, role_id))
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def check_trust_role(self, trust_id, role_id):
-        """HEAD Check if role is delegated by a trust."""
-        resp, body = self.head("OS-TRUST/trusts/%s/roles/%s"
-                               % (trust_id, role_id))
-        self.expected_success(200, resp.status)
-        return service_client.ResponseBody(resp, body)
