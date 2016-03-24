@@ -258,7 +258,7 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
 
     @classmethod
     def delete_router(cls, router):
-        body = cls.client.list_router_interfaces(router['id'])
+        body = cls.ports_client.list_ports(device_id=router['id'])
         interfaces = body['ports']
         for i in interfaces:
             try:
